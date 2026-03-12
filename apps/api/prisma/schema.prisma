@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  passwordHash String
+  cycleLength  Int        @default(28)
+  createdAt    DateTime   @default(now())
+
+  cycles    Cycle[]
+  dailyLogs DailyLog[]
+  tasks     Task[]
+}
+
+model Cycle {
+  id          String    @id @default(cuid())
+  userId      String
+  startDate   DateTime
+  endDate     DateTime?
+  cycleLength Int?
+  notes       String?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DailyLog {
+  id       String   @id @default(cuid())
+  userId   String
+  date     DateTime @db.Date
+  mood     Int?
+  energy   Int?
+  symptoms String[]
+  notes    String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model Task {
+  id               String   @id @default(cuid())
+  userId           String
+  date             DateTime @db.Date
+  text             String
+  category         String?
+  duration         Int?
+  completed        Boolean  @default(false)
+  phaseWhenCreated String?
+  createdAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Symptom {
+  id       String @id @default(cuid())
+  name     String
+  category String
+}
