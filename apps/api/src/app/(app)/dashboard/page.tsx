@@ -4,6 +4,7 @@ import { calculateCycleStatus, CyclePhase } from "@/src/lib/cycle-engine";
 import { prisma } from "@/src/lib/db";
 import { Card, CardContent } from "@/src/components/ui/card";
 import { CalendarDays, Zap, Timer } from "lucide-react";
+import { MoodTracker } from "@/src/components/MoodTracker";
 
 const PHASE_GRADIENTS: Record<CyclePhase, string> = {
   menstrual: "from-[#EEF2FF] to-[#E8E4FF]",
@@ -89,6 +90,8 @@ export default async function DashboardPage() {
           <CalendarDays size={20} className="text-primary" />
         </CardContent>
       </Card>
+
+      <MoodTracker />
     </div>
   );
 }
