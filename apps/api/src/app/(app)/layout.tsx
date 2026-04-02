@@ -12,7 +12,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
       {/* Conteúdo principal */}
       <SidebarInset>
-        <main className="min-h-screen pb-20 md:pb-8 px-5 md:px-10 max-w-2xl md:max-w-4xl mx-auto">
+        <main className="min-h-screen pb-20 md:pb-8 px-5 md:px-12 max-w-2xl mx-auto md:max-w-none md:mx-0">
           {children}
         </main>
       </SidebarInset>
