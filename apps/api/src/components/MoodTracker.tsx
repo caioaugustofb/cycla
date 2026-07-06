@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 
 const MOOD_OPTIONS = [
-  { value: 1, label: "Pésimo" },
+  { value: 1, label: "Péssimo" },
   { value: 2, label: "Ruim" },
   { value: 3, label: "Ok" },
   { value: 4, label: "Bem" },
@@ -161,7 +161,7 @@ export function MoodTracker() {
           {/* Sintomas */}
           <div className="flex flex-col gap-2">
             <p className="text-sm font-medium">
-              Simtomas{" "}
+              Sintomas{" "}
               <span className="text-muted-foreground font-normal">
                 (Opcional)
               </span>
