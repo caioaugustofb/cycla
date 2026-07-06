@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { User, RefreshCw, Check } from "lucide-react";
+import { User, RefreshCw, Check, AlertTriangle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/components/ui/card";
 import { Input } from "@/src/components/ui/input";
 import { Label } from "@/src/components/ui/label";
@@ -129,7 +129,7 @@ export default function SettingsPage() {
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cycleLength">Duração média do ciclo (dias)</Label>
+              <Label htmlFor="cycleLength">Duração do ciclo menstrual (dias)</Label>
               <Input
                 id="cycleLength"
                 type="number"
@@ -140,8 +140,18 @@ export default function SettingsPage() {
                 className="w-28"
               />
               <p className="text-xs text-muted-foreground">
-                Entre 21 e 45 dias. a média é 28 dias.
+                Contado do primeiro dia da menstruação até o início da próxima. A média é 28 dias.
               </p>
+              {cycleLength > 35 && (
+                <div className="flex gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <AlertTriangle size={14} className="mt-0.5 shrink-0 text-amber-500" />
+                  <p>
+                    Ciclos acima de 35 dias podem indicar <strong>oligomenorreia</strong> — uma
+                    irregularidade que pode estar associada a condições como SOP, hipotireoidismo ou
+                    alterações hormonais. Considere consultar um ginecologista para avaliação.
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

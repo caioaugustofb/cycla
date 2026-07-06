@@ -5,7 +5,7 @@ import { prisma } from "@/src/lib/db";
 
 const onboardingSchema = z.object ({
   lastPeriodDate: z.string().min(1),
-  cycleLength: z.number().min(21).max(35),
+  cycleLength: z.number().min(21).max(45),
 });
 
 export async function POST(request: Request) {
