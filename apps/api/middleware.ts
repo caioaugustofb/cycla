@@ -7,19 +7,19 @@ export default auth((req) => {
 
   const isAuthRoute =
     pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/onboarding");
+    pathname.startsWith("/register");
   const isAppRoute =
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/tasks") ||
     pathname.startsWith("/progress") ||
-    pathname.startsWith("/settings");
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/onboarding");
   
   if (isAppRoute && !isLoggedIn) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (isAppRoute && isLoggedIn) {
+  if (isAuthRoute && isLoggedIn) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
