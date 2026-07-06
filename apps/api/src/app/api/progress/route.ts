@@ -8,14 +8,22 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const from = new Date();
-  from.setDate(from.getDate() - 29);
-  from.setHours(0, 0, 0, 0);
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setHours(0, 0, 0, 0);
 
   const logs = await prisma.dailyLog.findMany({
-    where: { userId: session.user.id, date: { gte: from } },
+    where: {
+      userId: session.user.id,
+      date: { gte: thirtyDaysAgo },
+    },
     orderBy: { date: "asc" },
-    select: { date: true, mood: true, energy: true, symptoms: true },
+    select: {
+      date: true,
+      mood: true,
+      energy: true,
+      symptoms: true,
+    },
   });
 
   return NextResponse.json(logs);
