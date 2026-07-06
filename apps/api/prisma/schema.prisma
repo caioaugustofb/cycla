@@ -2,17 +2,13 @@ generator client {
   provider = "prisma-client-js"
 }
 
-datasource db {
-  provider = "postgresql"
-  url = env("DATABASE_URL")
-}
-
 model User {
   id           String     @id @default(cuid())
   name         String
   email        String     @unique
   passwordHash String
   cycleLength  Int        @default(28)
+  role         String     @default("user")
   createdAt    DateTime   @default(now())
 
   cycles    Cycle[]
@@ -64,4 +60,10 @@ model Symptom {
   id       String @id @default(cuid())
   name     String
   category String
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") 
 }
