@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
 import { z } from "zod/v4";
+import { getUser } from "@/src/lib/get-user";
 
 const createTaskSchema = z.object({
   text: z.string().min(1, "Texto obrigatório"),
@@ -12,8 +12,8 @@ const createTaskSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   const tasks = await prisma.task.findMany({
     where: {
-      userId: session.user.id,
+      userId: user.id,
       date: new Date(date),
     },
     orderBy: { createdAt: "asc" },
@@ -32,8 +32,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   const task = await prisma.task.create({
     data: {
-      userId: session.user.id,
+      userId: user.id,
       text,
       category,
       duration,

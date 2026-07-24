@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
+import { getUser } from "@/src/lib/get-user";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -14,7 +14,7 @@ export async function GET() {
 
   const logs = await prisma.dailyLog.findMany({
     where: {
-      userId: session.user.id,
+      userId: user.id,
       date: { gte: thirtyDaysAgo },
     },
     orderBy: { date: "asc" },

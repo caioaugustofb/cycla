@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
 import { z } from "zod/v4";
+import { getUser } from "@/src/lib/get-user";
 
 const patchTaskSchema = z.object({
   completed: z.boolean(),
@@ -11,8 +11,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -26,7 +26,7 @@ export async function PATCH(
 
   const task = await prisma.task.findUnique({ where: { id } });
 
-  if (!task || task.userId !== session.user.id) {
+  if (!task || task.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -42,15 +42,15 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { id } = await params;
   const task = await prisma.task.findUnique({ where: { id } });
 
-  if (!task || task.userId !== session.user.id) {
+  if (!task || task.userId !== user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

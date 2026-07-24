@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
 import { z } from "zod/v4";
+import { getUser } from "@/src/lib/get-user";
 
 const dailyLogSchema = z.object({
   mood: z.number().min(1).max(5).optional(),
@@ -16,21 +16,21 @@ function today() {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const log = await prisma.dailyLog.findUnique({
-    where: { userId_date: { userId: session.user.id, date: today() } },
+    where: { userId_date: { userId: user.id, date: today() } },
   });
 
   return NextResponse.json(log);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if(!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
   const { mood, energy, symptoms } = parsed.data;
 
   const log = await prisma.dailyLog.upsert({
-    where: { userId_date: { userId: session.user.id, date: today() } },
+    where: { userId_date: { userId: user.id, date: today() } },
     update: { mood: mood ?? null, energy: energy ?? null, symptoms: symptoms ?? [] },
     create: {
-      userId: session.user.id,
+      userId: user.id,
       date: today(),
       mood: mood ?? null,
       energy: energy ?? null,

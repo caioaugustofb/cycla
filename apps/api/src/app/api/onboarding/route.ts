@@ -1,17 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
+import { getUser } from "@/src/lib/get-user";
 
-const onboardingSchema = z.object ({
+const onboardingSchema = z.object({
   lastPeriodDate: z.string().min(1),
   cycleLength: z.number().min(21).max(45),
 });
 
-export async function POST(request: Request) {
-  const session = await auth();
+export async function POST(request: NextRequest) {
+  const user = await getUser();
 
-  if(!session?.user?.id) {
+  if (!user) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
@@ -25,13 +25,13 @@ export async function POST(request: Request) {
   const { lastPeriodDate, cycleLength } = parsed.data;
 
   await prisma.user.update({
-    where: { id: session.user.id },
+    where: { id: user.id },
     data: { cycleLength },
   });
 
   await prisma.cycle.create({
     data: {
-      userId: session.user.id,
+      userId: user.id,
       startDate: new Date(lastPeriodDate),
       cycleLength,
     },

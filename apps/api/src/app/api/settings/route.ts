@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/src/auth";
 import { prisma } from "@/src/lib/db";
 import { z } from "zod/v4";
+import { getUser } from "@/src/lib/get-user";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+  const userData = await prisma.user.findUnique({
+    where: { id: user.id },
     select: { name: true, email: true, cycleLength: true },
   });
 
-  return NextResponse.json(user);
+  return NextResponse.json(userData);
 }
 
 const patchSchema = z.object({
@@ -23,22 +23,22 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
+  const user = await getUser();
+  if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const body = await req.json();
   const parsed = patchSchema.safeParse(body);
-  if(!parsed.success) {
+  if (!parsed.success) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const user = await prisma.user.update({
-    where: { id: session.user.id },
+  const userData = await prisma.user.update({
+    where: { id: user.id },
     data: parsed.data,
     select: { name: true, email: true, cycleLength: true },
   });
 
-  return NextResponse.json(user);
+  return NextResponse.json(userData);
 }
