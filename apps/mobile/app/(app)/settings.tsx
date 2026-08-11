@@ -107,7 +107,7 @@ export default function SettingsScreen() {
         >
           <View className="flex-row items-center gap-2">
             <User size={15} color="#7C6FCD" />
-            <Text className="text-sm font-semibold text-foreground">Perfil</Text>
+            <Text className="text-base font-semibold text-foreground">Perfil</Text>
           </View>
 
           <View className="gap-1.5">
@@ -141,7 +141,7 @@ export default function SettingsScreen() {
         >
           <View className="flex-row items-center gap-2">
             <RefreshCw size={15} color="#7C6FCD" />
-            <Text className="text-sm font-semibold text-foreground">Ciclo menstrual</Text>
+            <Text className="text-base font-semibold text-foreground">Ciclo menstrual</Text>
           </View>
 
           <View className="gap-1.5">

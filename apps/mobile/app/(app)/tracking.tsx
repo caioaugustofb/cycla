@@ -518,7 +518,7 @@ export default function TrackingScreen() {
           </View>
         ) : (
           <View className="gap-3">
-            <Text className="text-sm font-semibold text-foreground">Histórico</Text>
+            <Text className="text-base font-semibold text-foreground">Histórico</Text>
             {cycles.map((cycle, i) => (
               <Animated.View
                 key={`${animKey}-${cycle.id}`}

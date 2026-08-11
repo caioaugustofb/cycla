@@ -152,7 +152,7 @@ export default function ProgressScreen() {
         >
           <View className="flex-row items-center gap-1.5">
             <Activity size={14} color="#9ca3af" />
-            <Text className="text-sm font-semibold text-foreground">Top sintomas</Text>
+            <Text className="text-base font-semibold text-foreground">Top sintomas</Text>
           </View>
           {symptoms.length > 0 ? (
             <View className="gap-2">
@@ -176,7 +176,7 @@ export default function ProgressScreen() {
             entering={FadeInDown.delay(100).duration(250)}
             className="bg-white rounded-2xl p-4 border border-border gap-3"
           >
-            <Text className="text-sm font-semibold text-foreground">Registros recentes</Text>
+            <Text className="text-base font-semibold text-foreground">Registros recentes</Text>
             <View className="gap-2">
               {logs.slice(-7).reverse().map((log) => (
                 <View
