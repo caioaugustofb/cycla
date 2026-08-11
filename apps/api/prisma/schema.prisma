@@ -14,6 +14,7 @@ model User {
   cycles    Cycle[]
   dailyLogs DailyLog[]
   tasks     Task[]
+  habits    Habit[]
 }
 
 model Cycle {
@@ -54,6 +55,18 @@ model Task {
   createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Habit {
+  id        String   @id @default(cuid())
+  userId    String
+  phase     String   // menstrual | follicular | ovulatory | luteal
+  text      String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, phase])
 }
 
 model Symptom {
