@@ -5,5 +5,8 @@
   "scripts": {
     "api:dev": "npm run dev -w cycla",
     "api:build": "npm run build -w cycla"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
   }
 }
