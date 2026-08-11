@@ -1,0 +1,9 @@
+{
+  "name": "cycla-monorepo",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "api:dev": "npm run dev -w cycla",
+    "api:build": "npm run build -w cycla"
+  }
+}

@@ -7,13 +7,17 @@ export async function GET() {
   const user = await getUser();
   if (!user) return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
 
-  const cycle = await prisma.cycle.findFirst({
-    where: { userId: user.id },
-    orderBy: { startDate: "desc" },
-  });
+  const [dbUser, cycle] = await Promise.all([
+    prisma.user.findUnique({ where: { id: user.id }, select: { cycleLength: true } }),
+    prisma.cycle.findFirst({
+      where: { userId: user.id },
+      orderBy: { startDate: "desc" },
+    }),
+  ]);
 
   if (!cycle) return NextResponse.json({ error: "Ciclo não encontrado" }, { status: 404 });
 
-  const status = calculateCycleStatus(cycle.startDate, cycle.cycleLength);
+  const cycleLength = cycle.cycleLength ?? dbUser?.cycleLength ?? 28;
+  const status = calculateCycleStatus(cycle.startDate, cycleLength);
   return NextResponse.json(status);
 }
