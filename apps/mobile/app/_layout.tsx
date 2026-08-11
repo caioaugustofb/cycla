@@ -6,15 +6,20 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
+import { GreetingScreen } from "@/components/GreetingScreen";
 
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigation() {
   const { user, isLoading } = useAuth();
-  const segments = useSegments();
+  const segments = useSegments() as string[];
   const router = useRouter();
   const [splashComplete, setSplashComplete] = useState(false);
   const [minElapsed, setMinElapsed] = useState(false);
+  const [greetingDone, setGreetingDone] = useState(false);
+  const firstName = user?.name?.split(" ")[0] ?? "";
+  const ready = !isLoading && minElapsed;
+  const showGreeting = ready && !!user && !greetingDone;
 
   useEffect(() => {
     const t = setTimeout(() => setMinElapsed(true), 1500);
@@ -39,9 +44,12 @@ function RootNavigation() {
     <>
       <StatusBar style="dark" />
       <Stack screenOptions={{ headerShown: false }} />
+      {showGreeting && (
+        <GreetingScreen name={firstName} onFinish={() => setGreetingDone(true)} />
+      )}
       {!splashComplete && (
         <AnimatedSplash
-          ready={!isLoading && minElapsed}
+          ready={ready}
           onFinish={() => setSplashComplete(true)}
         />
       )}

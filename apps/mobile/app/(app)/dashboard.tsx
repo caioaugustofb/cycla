@@ -209,6 +209,8 @@ export default function DashboardScreen() {
   }
 
   const firstName = user?.name?.split(" ")[0] ?? "";
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
   const activePhase: CyclePhase = status?.phase ?? "menstrual";
   const accent = PHASE_ACCENT[activePhase];
   const phaseImage = PHASE_IMAGES[activePhase];
@@ -230,7 +232,7 @@ export default function DashboardScreen() {
         contentContainerStyle={{ padding: 24, gap: 16 }}
       >
         <View>
-          <Text className="text-muted text-sm">Olá, {firstName}</Text>
+          <Text className="text-primary font-semibold text-sm">{greeting}, {firstName}</Text>
           <Text className="text-2xl font-bold text-foreground">Seu ciclo hoje</Text>
         </View>
 
