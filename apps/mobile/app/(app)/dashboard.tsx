@@ -19,7 +19,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { CycleStatus, CyclePhase } from "@/lib/cycle-engine";
+import { CycleStatus, CyclePhase } from "@cycla/core";
 import { PressableScale } from "@/components/PressableScale";
 
 const PHASE_IMAGES: Record<CyclePhase, ReturnType<typeof require>> = {

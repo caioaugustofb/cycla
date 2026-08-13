@@ -10,6 +10,7 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@cycla/core": "*",
     "@hookform/resolvers": "^5.2.2",
     "@prisma/client": "^5.22.0",
     "bcryptjs": "^3.0.3",

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db";
 import { getUser } from "@/src/lib/get-user";
-import { calculateCycleStatus } from "@/src/lib/cycle-engine";
+import { calculateCycleStatus } from "@cycla/core";
 
 export async function GET() {
   const user = await getUser();
