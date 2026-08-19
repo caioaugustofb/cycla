@@ -8,7 +8,15 @@ import {
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { User, RefreshCw, Check, AlertTriangle, LogOut } from "lucide-react-native";
+import { 
+  User,
+  RefreshCw, 
+  Check, 
+  AlertTriangle, 
+  LogOut,
+  Repeat,
+  ChevronRight,
+ } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -172,10 +180,37 @@ export default function SettingsScreen() {
             )}
           </View>
         </Animated.View>
+        
+        <Animated.View
+          key={`habits-${animKey}`}
+          entering={FadeInDown.delay(100).duration(250)}
+        >
+          <PressableScale
+            onPress={() => router.push("/habits")}
+            className="bg-white rounded-2xl p-4 border border-border"
+          >
+            <View className="flex-row items-center">
+              <View className="bg-accent-light rounded-xl p-2.5">
+                <Repeat size={18} color="#7C6FCD" />
+              </View>
+
+              <View className="flex-1 ml-3">
+                <Text className="text-base font-semibold text-foreground">
+                  Hábitos
+                </Text>
+                <Text className="text-sm text-muted mt-0.5">
+                  Configure hábitos para cada fase
+                </Text>
+              </View>
+
+              <ChevronRight size={18} color="#9CA3AF" />
+            </View>
+          </PressableScale>
+        </Animated.View>
 
         <Animated.View
           key={`save-${animKey}`}
-          entering={FadeInDown.delay(100).duration(250)}
+          entering={FadeInDown.delay(150).duration(250)}
         >
           <PressableScale
             onPress={handleSave}
@@ -201,7 +236,7 @@ export default function SettingsScreen() {
 
         <Animated.View
           key={`sair-${animKey}`}
-          entering={FadeInDown.delay(150).duration(250)}
+          entering={FadeInDown.delay(200).duration(250)}
         >
           <PressableScale
             onPress={handleLogout}

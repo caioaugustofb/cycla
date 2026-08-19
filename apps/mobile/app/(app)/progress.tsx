@@ -1,16 +1,24 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import { View, Text, ScrollView, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useFocusEffect } from "expo-router";
-import { Smile, Zap, Activity } from "lucide-react-native";
+import { useFocusEffect, useRouter } from "expo-router";
+import { Smile, Zap, Activity, Repeat, ChevronRight } from "lucide-react-native";
+import { PressableScale } from "@/components/PressableScale";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { apiFetch } from "@/lib/api";
+import type { CyclePhase, CycleStatus } from "@cycla/core";
 
 type RawLog = {
   date: string;
   mood: number | null;
   energy: number | null;
   symptoms: string[];
+};
+
+type Habit = {
+  id: string;
+  phase: CyclePhase;
+  text: string;
 };
 
 const MOOD_LABELS: Record<number, string> = {
@@ -32,7 +40,9 @@ const ENERGY_LABELS: Record<number, string> = {
 function average(values: (number | null)[]) {
   const valid = values.filter((v): v is number => v !== null);
   if (valid.length === 0) return null;
-  return Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10;
+  return (
+    Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10
+  );
 }
 
 function topSymptoms(logs: RawLog[]) {
@@ -60,29 +70,131 @@ function MiniBar({ value, max = 5 }: { value: number; max?: number }) {
   );
 }
 
+function CurrentPhaseHabits({
+  habits,
+  phase,
+  phaseName,
+  animKey,
+}: {
+  habits: Habit[];
+  phase: string;
+  phaseName: string;
+  animKey: number;
+}) {
+  const router = useRouter();
+  return (
+    <Animated.View
+      key={`habits-${animKey}`}
+      entering={FadeInDown.delay(50).duration(250)}
+    >
+      <PressableScale
+        onPress={() =>
+          router.push({ pathname: "/habits", params: { phase, locked: "1" } })
+        }
+        haptic
+        className="bg-white rounded-2xl p-4 border border-border gap-3"
+      >
+        <View className="flex-row items-center gap-2">
+          <View className="bg-accent-light rounded-xl p-2">
+            <Repeat size={16} color="#7C6FCD" />
+          </View>
+
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-foreground">
+              Hábitos
+            </Text>
+            <Text className="text-xs text-muted mt-0.5">Fase {phaseName}</Text>
+          </View>
+
+          <ChevronRight size={18} color="#9ca3af"/>
+        </View>
+
+        {habits.length > 0 ? (
+          <View className="gap-2">
+            {habits.map((habit) => (
+              <View
+                key={habit.id}
+                className="flex-row items-center gap-2.5 bg-surface rounded-xl px-3 py-2.5"
+              >
+                <View className="w-1.5 h-1.5 rounded-full bg-primary" />
+
+                <Text className="text-sm text-foreground flex-1">
+                  {habit.text}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : (
+          <Text className="text-sm text-muted">
+            Nenhum hábito para esta fase. Toque para adicionar.
+          </Text>
+        )}
+
+        <Text className="text-xs font-medium text-primary">
+          Editar hábitos desta fase
+        </Text>
+      </PressableScale>
+    </Animated.View>
+  );
+}
+
 export default function ProgressScreen() {
   const [logs, setLogs] = useState<RawLog[]>([]);
+  const [status, setStatus] = useState<CycleStatus | null>(null);
+  const [habits, setHabits] = useState<Habit[]>([]);
   const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
   const firstFocus = useRef(true);
+
+  const load = useCallback(async () => {
+    try {
+      const [progressRes, statusRes] = await Promise.all([
+        apiFetch("/api/progress"),
+        apiFetch("/api/cycle/status"),
+      ]);
+
+      if (progressRes.ok) {
+        const progressLogs: RawLog[] = await progressRes.json();
+        setLogs(progressLogs);
+      }
+
+      if (statusRes.ok) {
+        const cycleStatus: CycleStatus = await statusRes.json();
+        setStatus(cycleStatus);
+
+        const habitsRes = await apiFetch(
+          `/api/habits?phase=${cycleStatus.phase}`,
+        );
+
+        if (habitsRes.ok) {
+          const currentPhaseHabits: Habit[] = await habitsRes.json();
+          setHabits(currentPhaseHabits);
+        } else {
+          setHabits([]);
+        }
+      } else {
+        setStatus(null);
+        setHabits([]);
+      }
+    } catch {
+      setStatus(null);
+      setHabits([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       if (firstFocus.current) {
         firstFocus.current = false;
-        return;
+      } else {
+        setAnimKey((key) => key + 1);
       }
-      setAnimKey((k) => k + 1);
-    }, [])
-  );
 
-  useEffect(() => {
-    async function load() {
-      const res = await apiFetch("/api/progress");
-      if (res.ok) setLogs(await res.json());
-      setLoading(false);
-    }
-    load();
-  }, []);
+      void load();
+    }, [load]),
+  );
 
   if (loading) {
     return (
@@ -99,7 +211,10 @@ export default function ProgressScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 20 }}>
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 24, gap: 20 }}
+      >
         <View>
           <Text className="text-2xl font-bold text-primary">Progresso</Text>
           <Text className="text-sm text-muted mt-1">Últimos 30 dias</Text>
@@ -117,8 +232,12 @@ export default function ProgressScreen() {
             </View>
             {avgMood !== null ? (
               <>
-                <Text className="text-2xl font-bold text-primary">{avgMood}</Text>
-                <Text className="text-xs text-muted">{MOOD_LABELS[Math.round(avgMood)]}</Text>
+                <Text className="text-2xl font-bold text-primary">
+                  {avgMood}
+                </Text>
+                <Text className="text-xs text-muted">
+                  {MOOD_LABELS[Math.round(avgMood)]}
+                </Text>
                 <MiniBar value={avgMood} />
               </>
             ) : (
@@ -133,7 +252,9 @@ export default function ProgressScreen() {
             </View>
             {avgEnergy !== null ? (
               <>
-                <Text className="text-2xl font-bold text-primary">{avgEnergy}</Text>
+                <Text className="text-2xl font-bold text-primary">
+                  {avgEnergy}
+                </Text>
                 <Text className="text-xs text-muted">
                   {ENERGY_LABELS[Math.round(avgEnergy)]}
                 </Text>
@@ -145,66 +266,89 @@ export default function ProgressScreen() {
           </View>
         </Animated.View>
 
+        {status && (
+          <CurrentPhaseHabits
+            habits={habits}
+            phase={status.phase}
+            phaseName={status.phaseInfo.name}
+            animKey={animKey}
+          />
+        )}
+
         <Animated.View
           key={`symptoms-${animKey}`}
-          entering={FadeInDown.delay(50).duration(250)}
+          entering={FadeInDown.delay(100).duration(250)}
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
           <View className="flex-row items-center gap-1.5">
             <Activity size={14} color="#9ca3af" />
-            <Text className="text-base font-semibold text-foreground">Top sintomas</Text>
+            <Text className="text-base font-semibold text-foreground">
+              Top sintomas
+            </Text>
           </View>
           {symptoms.length > 0 ? (
             <View className="gap-2">
               {symptoms.map((s) => (
-                <View key={s.name} className="flex-row items-center justify-between">
+                <View
+                  key={s.name}
+                  className="flex-row items-center justify-between"
+                >
                   <Text className="text-sm text-foreground">{s.name}</Text>
                   <View className="bg-accent-light px-2 py-0.5 rounded-full">
-                    <Text className="text-xs text-primary font-medium">{s.count}x</Text>
+                    <Text className="text-xs text-primary font-medium">
+                      {s.count}x
+                    </Text>
                   </View>
                 </View>
               ))}
             </View>
           ) : (
-            <Text className="text-sm text-muted">Nenhum sintoma registrado.</Text>
+            <Text className="text-sm text-muted">
+              Nenhum sintoma registrado.
+            </Text>
           )}
         </Animated.View>
 
         {hasData && (
           <Animated.View
             key={`records-${animKey}`}
-            entering={FadeInDown.delay(100).duration(250)}
+            entering={FadeInDown.delay(150).duration(250)}
             className="bg-white rounded-2xl p-4 border border-border gap-3"
           >
-            <Text className="text-base font-semibold text-foreground">Registros recentes</Text>
+            <Text className="text-base font-semibold text-foreground">
+              Registros recentes
+            </Text>
             <View className="gap-2">
-              {logs.slice(-7).reverse().map((log) => (
-                <View
-                  key={log.date}
-                  className="flex-row items-center justify-between py-2 border-b border-border"
-                >
-                  <Text className="text-xs text-muted w-16">
-                    {new Date(log.date).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "2-digit",
-                    })}
-                  </Text>
-                  <View className="flex-row gap-4 flex-1 justify-end">
-                    <View className="flex-row items-center gap-1">
-                      <Smile size={12} color="#9ca3af" />
-                      <Text className="text-xs text-foreground">
-                        {log.mood ?? "-"}
-                      </Text>
-                    </View>
-                    <View className="flex-row items-center gap-1">
-                      <Zap size={12} color="#9ca3af" />
-                      <Text className="text-xs text-foreground">
-                        {log.energy ?? "-"}
-                      </Text>
+              {logs
+                .slice(-7)
+                .reverse()
+                .map((log) => (
+                  <View
+                    key={log.date}
+                    className="flex-row items-center justify-between py-2 border-b border-border"
+                  >
+                    <Text className="text-xs text-muted w-16">
+                      {new Date(log.date).toLocaleDateString("pt-BR", {
+                        day: "2-digit",
+                        month: "2-digit",
+                      })}
+                    </Text>
+                    <View className="flex-row gap-4 flex-1 justify-end">
+                      <View className="flex-row items-center gap-1">
+                        <Smile size={12} color="#9ca3af" />
+                        <Text className="text-xs text-foreground">
+                          {log.mood ?? "-"}
+                        </Text>
+                      </View>
+                      <View className="flex-row items-center gap-1">
+                        <Zap size={12} color="#9ca3af" />
+                        <Text className="text-xs text-foreground">
+                          {log.energy ?? "-"}
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
-              ))}
+                ))}
             </View>
           </Animated.View>
         )}
