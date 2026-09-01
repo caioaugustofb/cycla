@@ -3,14 +3,12 @@ import {
   View,
   Text,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   ActivityIndicator,
+  Image,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
-import { Moon } from "lucide-react-native";
 import { useAuth } from "@/context/AuthContext";
 import { PressableScale } from "@/components/PressableScale";
 
@@ -49,21 +47,20 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
           <View className="flex-1 justify-center px-6 py-10">
             <View className="items-center mb-8">
-              <View className="bg-accent-light p-4 rounded-3xl mb-4">
-                <Moon size={32} color="#7C6FCD" />
-              </View>
-              <Text className="text-3xl font-bold text-primary">Cycla</Text>
-              <Text className="text-base text-muted mt-1">Crie sua conta</Text>
+              <Image
+                source={require("../../assets/logo-tela-inicial2.png")}
+                style={{ width: 160, height: 160 }}
+                resizeMode="contain"
+              />
+              <Text className="text-base text-primary mt-1">Crie sua conta</Text>
             </View>
 
             <View className="flex flex-col gap-4">
@@ -134,8 +131,7 @@ export default function RegisterScreen() {
               </Link>
             </Text>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

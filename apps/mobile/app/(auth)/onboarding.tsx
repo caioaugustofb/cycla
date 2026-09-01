@@ -3,11 +3,9 @@ import {
   View,
   Text,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Sparkles, AlertTriangle } from "lucide-react-native";
@@ -77,14 +75,12 @@ export default function OnboardingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        className="flex-1"
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={20}
       >
-        <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-        >
           <View className="flex-1 justify-center px-6 py-10">
             <View className="items-center mb-8">
               <View className="bg-accent-light p-4 rounded-3xl mb-4">
@@ -118,8 +114,8 @@ export default function OnboardingScreen() {
                   Duração do seu ciclo (dias)
                 </Text>
                 <TextInput
-                  className="bg-white border border-border rounded-xl text-foreground w-28"
-                  style={{ height: 48, paddingHorizontal: 16, fontSize: 14 }}
+                  className="bg-white border border-border rounded-xl text-foreground w-16"
+                  style={{ height: 40, paddingHorizontal: 8, fontSize: 14, textAlign: "center" }}
                   placeholder="28"
                   placeholderTextColor="#9ca3af"
                   value={cycleLength}
@@ -161,8 +157,7 @@ export default function OnboardingScreen() {
               </PressableScale>
             </View>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
