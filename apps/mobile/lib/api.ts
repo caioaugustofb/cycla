@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-export const API_BASE = __DEV__ ? "http://localhost:3000" : "https://sua-api.com";
+export const API_BASE = __DEV__ ? "http://localhost:3100" : "https://sua-api.com";
 
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = await AsyncStorage.getItem("@cycla:token");
