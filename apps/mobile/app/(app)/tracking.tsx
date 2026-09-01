@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,12 +6,18 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { CalendarDays, Plus, X, ChevronLeft, ChevronRight } from "lucide-react-native";
-import Animated, { FadeInDown } from "react-native-reanimated";
+import { CalendarDays, Plus, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react-native";
+import Animated, { FadeInDown, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import Swipeable, {
+  type SwipeableMethods,
+} from "react-native-gesture-handler/ReanimatedSwipeable";
 import { apiFetch } from "@/lib/api";
 import { PressableScale } from "@/components/PressableScale";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { useToast } from "@/components/Toast";
 
 type CyclePhase = "menstrual" | "follicular" | "ovulatory" | "luteal";
 
@@ -37,6 +43,8 @@ const PHASE_NAMES: Record<CyclePhase, string> = {
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+const ACTION_WIDTH = 88;
+
 const MONTH_NAMES = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
@@ -48,8 +56,12 @@ function getPhaseForDate(
   cycleLength: number
 ): CyclePhase | null {
   const msPerDay = 1000 * 60 * 60 * 24;
-  const start = new Date(lastPeriodDate);
-  start.setHours(0, 0, 0, 0);
+  // startDate vem como meia-noite UTC; setHours() usaria o fuso local e perderia um dia em UTC-3.
+  const start = new Date(
+    lastPeriodDate.getUTCFullYear(),
+    lastPeriodDate.getUTCMonth(),
+    lastPeriodDate.getUTCDate(),
+  );
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
   const diff = Math.floor((d.getTime() - start.getTime()) / msPerDay);
@@ -75,6 +87,7 @@ function formatDate(isoString: string) {
     day: "2-digit",
     month: "long",
     year: "numeric",
+    timeZone: "UTC",
   });
 }
 
@@ -95,12 +108,90 @@ function parseDate(value: string): string | null {
   return `${year}-${month}-${day}`;
 }
 
-function cycleDuration(current: Cycle, next: Cycle | undefined): string {
-  if (!next) return "Em andamento";
+// A lista vem do mais recente para o mais antigo: o ciclo termina quando o SEGUINTE começa.
+function cycleDuration(current: Cycle, newer: Cycle | undefined): string {
+  if (!newer) return "Em andamento";
   const start = new Date(current.startDate);
-  const end = new Date(next.startDate);
+  const end = new Date(newer.startDate);
   const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
   return `${days} dias`;
+}
+
+function DeleteAction({
+  translation,
+  onPress,
+}: {
+  translation: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const style = useAnimatedStyle(() => ({
+    transform: [{ translateX: translation.value + ACTION_WIDTH }],
+  }));
+
+  return (
+    <Animated.View style={[{ width: ACTION_WIDTH }, style]}>
+      <PressableScale
+        onPress={onPress}
+        haptic
+        className="flex-1 items-center justify-center rounded-2xl ml-2"
+        style={{ backgroundColor: "#DC2626" }}
+      >
+        <Trash2 size={20} color="#fff" />
+        <Text className="text-white text-sm font-semibold mt-1">Excluir</Text>
+      </PressableScale>
+    </Animated.View>
+  );
+}
+
+function CycleHistoryItem({
+  cycle,
+  duration,
+  isCurrent,
+  onDelete,
+}: {
+  cycle: Cycle;
+  duration: string;
+  isCurrent: boolean;
+  onDelete: () => void;
+}) {
+  const swipeRef = useRef<SwipeableMethods>(null);
+
+  return (
+    <Swipeable
+      ref={swipeRef}
+      friction={2}
+      rightThreshold={40}
+      overshootRight={false}
+      renderRightActions={(_progress, translation) => (
+        <DeleteAction
+          translation={translation}
+          onPress={() => {
+            swipeRef.current?.close();
+            onDelete();
+          }}
+        />
+      )}
+      containerStyle={{ borderRadius: 16 }}
+    >
+      <View className="bg-surface-card rounded-2xl px-4 py-4 border border-border flex-row items-center justify-between">
+        <View className="flex-row items-center gap-3 flex-1 mr-3">
+          <View className="bg-accent-light p-2 rounded-xl">
+            <CalendarDays size={20} color="#7C6FCD" />
+          </View>
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-foreground">
+              {formatDate(cycle.startDate)}
+            </Text>
+            <Text className="text-sm text-muted mt-0.5">Início da menstruação</Text>
+          </View>
+        </View>
+        <View className="items-end">
+          <Text className="text-base font-semibold text-primary">{duration}</Text>
+          {isCurrent && <Text className="text-sm text-muted mt-0.5">Ciclo atual</Text>}
+        </View>
+      </View>
+    </Swipeable>
+  );
 }
 
 function getWeekStart(d: Date): Date {
@@ -238,7 +329,10 @@ function WeeklyCalendar({ weekStart, cycles }: { weekStart: Date; cycles: Cycle[
 }
 
 export default function TrackingScreen() {
+  const toast = useToast();
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [cycleToDelete, setCycleToDelete] = useState<Cycle | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"monthly" | "weekly">("monthly");
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -253,9 +347,11 @@ export default function TrackingScreen() {
     setLoading(false);
   }, []);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   const [animKey, setAnimKey] = useState(0);
   const firstFocus = useRef(true);
@@ -348,6 +444,20 @@ export default function TrackingScreen() {
     load();
   }
 
+  async function handleDelete() {
+    if (!cycleToDelete) return;
+    setDeleting(true);
+    const res = await apiFetch(`/api/cycle/${cycleToDelete.id}`, { method: "DELETE" });
+    setDeleting(false);
+    setCycleToDelete(null);
+    if (res.ok) {
+      toast.success("Ciclo excluído.");
+      load();
+    } else {
+      toast.error("Não foi possível excluir. Tente novamente.");
+    }
+  }
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-surface items-center justify-center">
@@ -358,11 +468,11 @@ export default function TrackingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 16 }}>
+      <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 16 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
         {/* Header */}
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="text-muted text-sm">Acompanhamento</Text>
+            <Text className="text-muted text-base">Acompanhamento</Text>
             <Text className="text-2xl font-bold text-foreground">Meu ciclo</Text>
           </View>
           <PressableScale
@@ -374,8 +484,8 @@ export default function TrackingScreen() {
             }}
             haptic
           >
-            {showForm ? <X size={16} color="#fff" /> : <Plus size={16} color="#fff" />}
-            <Text className="text-on-primary font-semibold text-sm">
+            {showForm ? <X size={18} color="#fff" /> : <Plus size={18} color="#fff" />}
+            <Text className="text-on-primary font-semibold text-base">
               {showForm ? "Cancelar" : "Registrar"}
             </Text>
           </PressableScale>
@@ -384,12 +494,12 @@ export default function TrackingScreen() {
         {/* Registration form */}
         {showForm && (
           <View className="bg-surface-card rounded-2xl p-5 border border-border gap-4">
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-lg font-semibold text-foreground">
               Quando sua menstruação começou?
             </Text>
             <TextInput
               className="bg-surface border border-border rounded-xl text-foreground"
-              style={{ height: 48, paddingHorizontal: 16, fontSize: 14 }}
+              style={{ height: 48, paddingHorizontal: 16, fontSize: 16 }}
               placeholder="DD/MM/AAAA"
               placeholderTextColor="#9CA3AF"
               value={date}
@@ -397,7 +507,7 @@ export default function TrackingScreen() {
               keyboardType="numeric"
               maxLength={10}
             />
-            {error ? <Text className="text-xs text-danger">{error}</Text> : null}
+            {error ? <Text className="text-sm text-danger">{error}</Text> : null}
             <PressableScale
               className="bg-primary rounded-2xl py-3.5 items-center"
               onPress={handleRegister}
@@ -425,7 +535,7 @@ export default function TrackingScreen() {
                 onPress={() => setView(v)}
               >
                 <Text
-                  className="text-sm font-medium"
+                  className="text-base font-medium"
                   style={{ color: view === v ? "#fff" : "#9CA3AF" }}
                 >
                   {v === "monthly" ? "Mensal" : "Semanal"}
@@ -439,7 +549,7 @@ export default function TrackingScreen() {
             <PressableScale onPress={navigatePrev} className="p-1">
               <ChevronLeft size={20} color="#7C6FCD" />
             </PressableScale>
-            <Text className="text-sm font-semibold text-foreground">{headerLabel()}</Text>
+            <Text className="text-base font-semibold text-foreground">{headerLabel()}</Text>
             <PressableScale onPress={navigateNext} className="p-1">
               <ChevronRight size={20} color="#7C6FCD" />
             </PressableScale>
@@ -448,7 +558,7 @@ export default function TrackingScreen() {
           {/* Grid */}
           {cycles.length === 0 ? (
             <View className="items-center py-6">
-              <Text className="text-sm text-muted text-center">
+              <Text className="text-base text-muted text-center">
                 Registre sua menstruação para ver as fases no calendário.
               </Text>
             </View>
@@ -498,11 +608,11 @@ export default function TrackingScreen() {
           <View className="flex-row gap-3">
             <View className="flex-1 bg-surface-card rounded-2xl p-4 border border-border items-center">
               <Text className="text-2xl font-bold text-primary">{avgCycleLength}</Text>
-              <Text className="text-xs text-muted mt-1">Dias em média</Text>
+              <Text className="text-sm text-muted mt-1">Dias em média</Text>
             </View>
             <View className="flex-1 bg-surface-card rounded-2xl p-4 border border-border items-center">
               <Text className="text-2xl font-bold text-primary">{cycles.length}</Text>
-              <Text className="text-xs text-muted mt-1">Ciclos registrados</Text>
+              <Text className="text-sm text-muted mt-1">Ciclos registrados</Text>
             </View>
           </View>
         )}
@@ -511,44 +621,47 @@ export default function TrackingScreen() {
         {cycles.length === 0 ? (
           <View className="items-center py-12 gap-3">
             <CalendarDays size={40} color="#A78BFA" />
-            <Text className="text-base font-semibold text-foreground">Nenhum ciclo registrado</Text>
-            <Text className="text-sm text-muted text-center">
+            <Text className="text-lg font-semibold text-foreground">Nenhum ciclo registrado</Text>
+            <Text className="text-base text-muted text-center">
               Registre o início da sua menstruação para começar o histórico.
             </Text>
           </View>
         ) : (
           <View className="gap-3">
-            <Text className="text-base font-semibold text-foreground">Histórico</Text>
+            <View className="flex-row items-baseline justify-between">
+              <Text className="text-lg font-semibold text-foreground">Histórico</Text>
+              <Text className="text-sm text-muted">Arraste para excluir</Text>
+            </View>
             {cycles.map((cycle, i) => (
               <Animated.View
                 key={`${animKey}-${cycle.id}`}
                 entering={FadeInDown.delay(Math.min(i, 6) * 50).duration(250)}
-                className="bg-surface-card rounded-2xl px-4 py-4 border border-border flex-row items-center justify-between"
               >
-                <View className="flex-row items-center gap-3">
-                  <View className="bg-accent-light p-2 rounded-xl">
-                    <CalendarDays size={18} color="#7C6FCD" />
-                  </View>
-                  <View>
-                    <Text className="text-sm font-semibold text-foreground">
-                      {formatDate(cycle.startDate)}
-                    </Text>
-                    <Text className="text-xs text-muted mt-0.5">Início da menstruação</Text>
-                  </View>
-                </View>
-                <View className="items-end">
-                  <Text className="text-sm font-semibold text-primary">
-                    {cycleDuration(cycle, cycles[i + 1])}
-                  </Text>
-                  {i === 0 && (
-                    <Text className="text-xs text-muted mt-0.5">Ciclo atual</Text>
-                  )}
-                </View>
+                <CycleHistoryItem
+                  cycle={cycle}
+                  duration={cycleDuration(cycle, cycles[i - 1])}
+                  isCurrent={i === 0}
+                  onDelete={() => setCycleToDelete(cycle)}
+                />
               </Animated.View>
             ))}
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
+
+      <ConfirmDialog
+        visible={cycleToDelete !== null}
+        destructive
+        title="Excluir este ciclo?"
+        message={
+          cycleToDelete
+            ? `O registro de ${formatDate(cycleToDelete.startDate)} sairá do histórico e deixará de ser usado no acompanhamento das suas fases.`
+            : ""
+        }
+        confirmLabel={deleting ? "Excluindo..." : "Excluir"}
+        onConfirm={handleDelete}
+        onCancel={() => setCycleToDelete(null)}
+      />
     </SafeAreaView>
   );
 }

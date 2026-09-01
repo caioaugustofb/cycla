@@ -22,8 +22,22 @@ export async function POST(req: NextRequest) {
     select: { cycleLength: true },
   });
   if (!userData) return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 });
+
+  const date = new Date(startDate);
+
+  const existing = await prisma.cycle.findFirst({
+    where: { userId: user.id, startDate: date },
+  });
+  if (existing) {
+    const updated = await prisma.cycle.update({
+      where: { id: existing.id },
+      data: { cycleLength: userData.cycleLength },
+    });
+    return NextResponse.json(updated);
+  }
+
   const cycle = await prisma.cycle.create({
-    data: { userId: user.id, startDate: new Date(startDate), cycleLength: userData.cycleLength },
+    data: { userId: user.id, startDate: date, cycleLength: userData.cycleLength },
   });
   return NextResponse.json(cycle, { status: 201 });
 }
