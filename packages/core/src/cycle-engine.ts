@@ -6,6 +6,10 @@ export interface CycleStatus {
   phaseDay: number;
   daysLeftInPhase: number;
   nextPeriodDate: Date;
+  /** true quando o ciclo passou da duração prevista sem um novo registro. */
+  isLate: boolean;
+  /** Dias de atraso. 0 = menstruação esperada hoje. */
+  daysLate: number;
   phaseInfo: {
     name: string;
     energy: string;
@@ -62,14 +66,48 @@ export function calculateCycleStatus(
 ): CycleStatus {
   const msPerDay = 1000 * 60 * 60 * 24;
 
-  const start = new Date(lastPeriodDate);
-  start.setHours(0, 0, 0, 0);
+  // startDate vem como meia-noite UTC; setHours() usaria o fuso local e perderia um dia em UTC-3.
+  const rawStart = new Date(lastPeriodDate);
+  const start = new Date(
+    Date.UTC(rawStart.getUTCFullYear(), rawStart.getUTCMonth(), rawStart.getUTCDate()),
+  );
 
-  const now = new Date(today);
-  now.setHours(0, 0, 0, 0);
+  const rawToday = new Date(today);
+  const now = new Date(
+    Date.UTC(rawToday.getFullYear(), rawToday.getMonth(), rawToday.getDate()),
+  );
 
   const daysSinceStart = Math.floor((now.getTime() - start.getTime()) / msPerDay);
-  const currentDay = (daysSinceStart % cycleLength) + 1;
+
+  // Sem registro novo não há como saber que o ciclo recomeçou: entra em atraso, não avança.
+  const nextPeriodDate = new Date(start.getTime() + cycleLength * msPerDay);
+  const isLate = daysSinceStart >= cycleLength;
+  const daysLate = isLate ? daysSinceStart - cycleLength : 0;
+
+  const currentDay = daysSinceStart + 1;
+
+  if (isLate) {
+    return {
+      currentDay,
+      phase: "luteal",
+      phaseDay: currentDay - 16,
+      daysLeftInPhase: 0,
+      nextPeriodDate,
+      isLate: true,
+      daysLate,
+      phaseInfo: {
+        name: "Atrasada",
+        label: "Atraso",
+        energy: "Variável",
+        description:
+          daysLate === 0
+            ? "Sua menstruação é esperada hoje. Registre quando ela começar."
+            : `Sua menstruação está atrasada há ${daysLate} ${
+                daysLate === 1 ? "dia" : "dias"
+              }. Registre quando ela começar.`,
+      },
+    };
+  }
 
   const phase = getPhase(currentDay);
   const phaseEndDay = getPhaseEndDay(phase, cycleLength);
@@ -78,17 +116,14 @@ export function calculateCycleStatus(
     (phase === "menstrual" ? 0 : phase === "follicular" ? 5 : phase === "ovulatory" ? 12 : 16);
   const daysLeftInPhase = phaseEndDay - currentDay;
 
-  const cyclesCompleted = Math.floor(daysSinceStart / cycleLength);
-  const nextPeriodDate = new Date(
-    start.getTime() + (cyclesCompleted + 1) * cycleLength * msPerDay,
-  );
-
   return {
     currentDay,
     phase,
     phaseDay,
     daysLeftInPhase,
     nextPeriodDate,
+    isLate: false,
+    daysLate: 0,
     phaseInfo: PHASE_INFO[phase],
   };
 }

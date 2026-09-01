@@ -17,7 +17,8 @@ export async function GET() {
 
   if (!cycle) return NextResponse.json({ error: "Ciclo não encontrado" }, { status: 404 });
 
-  const cycleLength = cycle.cycleLength ?? dbUser?.cycleLength ?? 28;
+  // Preferência do usuário vence: o ciclo em andamento é previsão, não histórico.
+  const cycleLength = dbUser?.cycleLength ?? cycle.cycleLength ?? 28;
   const status = calculateCycleStatus(cycle.startDate, cycleLength);
   return NextResponse.json(status);
 }
