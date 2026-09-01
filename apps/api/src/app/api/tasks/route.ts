@@ -5,8 +5,9 @@ import { getUser } from "@/src/lib/get-user";
 
 const createTaskSchema = z.object({
   text: z.string().min(1, "Texto obrigatório"),
-  category: z.enum(["exercise", "study", "rest", "social", "creative"]),
+  category: z.enum(["exercise", "study", "rest", "social", "creative"]).nullable().optional(),
   duration: z.number().min(1),
+  durationUnit: z.enum(["seconds", "minutes", "hours", "days"]).optional(),
   date: z.string().optional(),
   phaseWhenCreated: z.string().optional(),
 });
@@ -44,14 +45,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues }, { status: 400 });
   }
 
-  const { text, category, duration, date, phaseWhenCreated } = parsed.data;
+  const { text, category, duration, durationUnit, date, phaseWhenCreated } = parsed.data;
 
   const task = await prisma.task.create({
     data: {
       userId: user.id,
       text,
-      category,
+      category: category ?? null,
       duration,
+      durationUnit: durationUnit ?? "minutes",
       date: date ? new Date(date) : new Date(),
       phaseWhenCreated: phaseWhenCreated ?? null,
     },

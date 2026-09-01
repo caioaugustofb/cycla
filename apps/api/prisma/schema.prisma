@@ -50,6 +50,7 @@ model Task {
   text             String
   category         String?
   duration         Int?
+  durationUnit String @default("minutes")
   completed        Boolean  @default(false)
   phaseWhenCreated String?
   createdAt        DateTime @default(now())
