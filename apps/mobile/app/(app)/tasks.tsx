@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
 import { Plus, Trash2, Zap, CheckSquare, Check } from "lucide-react-native";
@@ -17,8 +18,9 @@ import { PressableScale } from "@/components/PressableScale";
 type Task = {
   id: string;
   text: string;
-  category: string;
+  category: string | null;
   duration: number;
+  durationUnit: string;
   completed: boolean;
   phaseWhenCreated: string | null;
 };
@@ -41,13 +43,28 @@ const CATEGORIES: { value: TaskCategory; label: string }[] = [
   { value: "creative", label: "Criativo" },
 ];
 
+const DURATION_UNITS: { value: string; label: string }[] = [
+  { value: "seconds", label: "segundos" },
+  { value: "minutes", label: "minutos" },
+  { value: "hours", label: "horas" },
+  { value: "days", label: "dias" },
+];
+
+const DURATION_UNIT_LABELS: Record<string, string> = {
+  seconds: "segundos",
+  minutes: "minutos",
+  hours: "horas",
+  days: "dias",
+};
+
 export default function TasksScreen() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [cycleStatus, setCycleStatus] = useState<CycleStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [customText, setCustomText] = useState("");
-  const [customCategory, setCustomCategory] = useState<TaskCategory>("study");
+  const [customCategory, setCustomCategory] = useState<TaskCategory | null>(null);
   const [customDuration, setCustomDuration] = useState("30");
+  const [customDurationUnit, setCustomDurationUnit] = useState<string>("minutes");
   const [adding, setAdding] = useState(false);
 
   const [animKey, setAnimKey] = useState(0);
@@ -62,23 +79,26 @@ export default function TasksScreen() {
     }, [])
   );
 
-  useEffect(() => {
-    async function load() {
-      const [tasksRes, cycleRes] = await Promise.all([
-        apiFetch("/api/tasks"),
-        apiFetch("/api/cycle/status"),
-      ]);
-      if (tasksRes.ok) setTasks(await tasksRes.json());
-      if (cycleRes.ok) setCycleStatus(await cycleRes.json());
-      setLoading(false);
-    }
-    load();
+  const loadData = useCallback(async () => {
+    const [tasksRes, cycleRes] = await Promise.all([
+      apiFetch("/api/tasks"),
+      apiFetch("/api/cycle/status"),
+    ]);
+    if (tasksRes.ok) setTasks(await tasksRes.json());
+    if (cycleRes.ok) setCycleStatus(await cycleRes.json());
+    setLoading(false);
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData]),
+  );
 
   async function addSuggestion(text: string, category: TaskCategory, duration: number) {
     const res = await apiFetch("/api/tasks", {
       method: "POST",
-      body: JSON.stringify({ text, category, duration, phaseWhenCreated: cycleStatus?.phase }),
+      body: JSON.stringify({ text, category, duration, durationUnit: "minutes", phaseWhenCreated: cycleStatus?.phase }),
     });
     if (res.ok) {
       const task = await res.json();
@@ -95,6 +115,7 @@ export default function TasksScreen() {
         text: customText.trim(),
         category: customCategory,
         duration: parseInt(customDuration, 10) || 30,
+        durationUnit: customDurationUnit,
         phaseWhenCreated: cycleStatus?.phase,
       }),
     });
@@ -103,6 +124,8 @@ export default function TasksScreen() {
       setTasks((prev) => [...prev, task]);
       setCustomText("");
       setCustomDuration("30");
+      setCustomCategory(null);
+      setCustomDurationUnit("minutes");
     }
     setAdding(false);
   }
@@ -136,11 +159,11 @@ export default function TasksScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 20 }}>
+      <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 20 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
         <View>
           <Text className="text-2xl font-bold text-primary">Tarefas do dia</Text>
           {cycleStatus && (
-            <Text className="text-sm text-muted mt-1">
+            <Text className="text-base text-muted mt-1">
               Fase atual:{" "}
               <Text className="font-medium text-foreground">{cycleStatus.phaseInfo.name}</Text>
             </Text>
@@ -153,11 +176,11 @@ export default function TasksScreen() {
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
           <View className="flex-row items-center gap-2">
-            <Zap size={16} color="#7C6FCD" />
-            <Text className="text-base font-semibold text-foreground">Sugestões para hoje</Text>
+            <Zap size={18} color="#7C6FCD" />
+            <Text className="text-lg font-semibold text-foreground">Sugestões para hoje</Text>
           </View>
           {availableSuggestions.length === 0 ? (
-            <Text className="text-sm text-muted text-center py-4">
+            <Text className="text-base text-muted text-center py-4">
               Todas as sugestões já foram adicionadas.
             </Text>
           ) : (
@@ -168,8 +191,8 @@ export default function TasksScreen() {
                 style={{ backgroundColor: "#F5F0FF" }}
               >
                 <View className="flex-1 mr-3">
-                  <Text className="text-sm font-medium text-foreground">{s.text}</Text>
-                  <Text className="text-xs text-muted mt-0.5">
+                  <Text className="text-base font-medium text-foreground">{s.text}</Text>
+                  <Text className="text-sm text-muted mt-0.5">
                     {CATEGORY_LABELS[s.category]} · {s.duration} min
                   </Text>
                 </View>
@@ -178,7 +201,7 @@ export default function TasksScreen() {
                   className="bg-primary rounded-xl p-2"
                   haptic
                 >
-                  <Plus size={16} color="#fff" />
+                  <Plus size={18} color="#fff" />
                 </PressableScale>
               </View>
             ))
@@ -191,11 +214,11 @@ export default function TasksScreen() {
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
           <View className="flex-row items-center gap-2">
-            <CheckSquare size={16} color="#7C6FCD" />
-            <Text className="text-base font-semibold text-foreground">Minhas tarefas</Text>
+            <CheckSquare size={18} color="#7C6FCD" />
+            <Text className="text-lg font-semibold text-foreground">Minhas tarefas</Text>
           </View>
           {tasks.length === 0 ? (
-            <Text className="text-sm text-muted text-center py-4">
+            <Text className="text-base text-muted text-center py-4">
               Nenhuma tarefa adicionada ainda.
             </Text>
           ) : (
@@ -216,7 +239,7 @@ export default function TasksScreen() {
                 </PressableScale>
                 <View className="flex-1 min-w-0">
                   <Text
-                    className="text-sm font-medium"
+                    className="text-base font-medium"
                     style={{
                       color: task.completed ? "#9ca3af" : "#111827",
                       textDecorationLine: task.completed ? "line-through" : "none",
@@ -224,12 +247,12 @@ export default function TasksScreen() {
                   >
                     {task.text}
                   </Text>
-                  <Text className="text-xs text-muted mt-0.5">
-                    {CATEGORY_LABELS[task.category] ?? task.category} · {task.duration} min
+                  <Text className="text-sm text-muted mt-0.5">
+                    {task.category ? `${CATEGORY_LABELS[task.category] ?? task.category} · ` : ""}{task.duration} {DURATION_UNIT_LABELS[task.durationUnit] ?? "min"}
                   </Text>
                 </View>
                 <PressableScale onPress={() => deleteTask(task.id)}>
-                  <Trash2 size={16} color="#9ca3af" />
+                  <Trash2 size={18} color="#9ca3af" />
                 </PressableScale>
               </View>
             ))
@@ -241,10 +264,10 @@ export default function TasksScreen() {
           entering={FadeInDown.delay(100).duration(250)}
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
-          <Text className="text-base font-semibold text-foreground">Adicionar tarefa</Text>
+          <Text className="text-lg font-semibold text-foreground">Adicionar tarefa</Text>
           <TextInput
             className="bg-surface border border-border rounded-xl text-foreground"
-            style={{ height: 48, paddingHorizontal: 16, fontSize: 14 }}
+            style={{ height: 48, paddingHorizontal: 16, fontSize: 16 }}
             placeholder="Nome da tarefa"
             placeholderTextColor="#9ca3af"
             value={customText}
@@ -255,7 +278,7 @@ export default function TasksScreen() {
               {CATEGORIES.map((cat) => (
                 <PressableScale
                   key={cat.value}
-                  onPress={() => setCustomCategory(cat.value)}
+                  onPress={() => setCustomCategory((prev) => (prev === cat.value ? null : cat.value))}
                   className="px-3 py-2 rounded-xl border"
                   style={{
                     backgroundColor: customCategory === cat.value ? "#7C6FCD" : "#F5F0FF",
@@ -264,7 +287,7 @@ export default function TasksScreen() {
                   }}
                 >
                   <Text
-                    className="text-xs font-medium"
+                    className="text-sm font-medium"
                     style={{ color: customCategory === cat.value ? "#fff" : "#9ca3af" }}
                   >
                     {cat.label}
@@ -275,15 +298,38 @@ export default function TasksScreen() {
           </ScrollView>
           <View className="flex-row items-center gap-2">
             <TextInput
-              className="bg-surface border border-border rounded-xl text-foreground w-20"
-              style={{ height: 48, paddingHorizontal: 12, fontSize: 14 }}
+              className="bg-surface border border-border rounded-xl text-foreground w-16"
+              style={{ height: 40, paddingHorizontal: 8, fontSize: 16, textAlign: "center" }}
               placeholder="30"
               placeholderTextColor="#9ca3af"
               value={customDuration}
-              onChangeText={setCustomDuration}
+              onChangeText={(t) => setCustomDuration(t.replace(/[^0-9]/g, ""))}
               keyboardType="number-pad"
+              maxLength={3}
             />
-            <Text className="text-sm text-muted">minutos</Text>
+            <View className="flex-row gap-1.5 flex-1">
+              {DURATION_UNITS.map((u) => {
+                const active = customDurationUnit === u.value;
+                return (
+                  <PressableScale
+                    key={u.value}
+                    onPress={() => setCustomDurationUnit(u.value)}
+                    className="flex-1 py-2 rounded-lg items-center border"
+                    style={{
+                      backgroundColor: active ? "#7C6FCD" : "#F5F0FF",
+                      borderColor: active ? "#7C6FCD" : "rgba(124,111,205,0.15)",
+                    }}
+                  >
+                    <Text
+                      className="text-sm font-medium"
+                      style={{ color: active ? "#fff" : "#9ca3af" }}
+                    >
+                      {u.label}
+                    </Text>
+                  </PressableScale>
+                );
+              })}
+            </View>
           </View>
           <PressableScale
             onPress={addCustomTask}
@@ -292,11 +338,11 @@ export default function TasksScreen() {
             className="bg-primary rounded-2xl py-3.5 items-center flex-row justify-center gap-2"
             style={{ opacity: adding || !customText.trim() ? 0.5 : 1 }}
           >
-            <Plus size={16} color="#fff" />
-            <Text className="text-white font-semibold text-sm">Adicionar</Text>
+            <Plus size={18} color="#fff" />
+            <Text className="text-white font-semibold text-base">Adicionar</Text>
           </PressableScale>
         </Animated.View>
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }

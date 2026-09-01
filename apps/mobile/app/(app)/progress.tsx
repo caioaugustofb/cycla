@@ -96,17 +96,17 @@ function CurrentPhaseHabits({
       >
         <View className="flex-row items-center gap-2">
           <View className="bg-accent-light rounded-xl p-2">
-            <Repeat size={16} color="#7C6FCD" />
+            <Repeat size={18} color="#7C6FCD" />
           </View>
 
           <View className="flex-1">
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-lg font-semibold text-foreground">
               Hábitos
             </Text>
-            <Text className="text-xs text-muted mt-0.5">Fase {phaseName}</Text>
+            <Text className="text-sm text-muted mt-0.5">Fase {phaseName}</Text>
           </View>
 
-          <ChevronRight size={18} color="#9ca3af"/>
+          <ChevronRight size={20} color="#9ca3af"/>
         </View>
 
         {habits.length > 0 ? (
@@ -118,19 +118,19 @@ function CurrentPhaseHabits({
               >
                 <View className="w-1.5 h-1.5 rounded-full bg-primary" />
 
-                <Text className="text-sm text-foreground flex-1">
+                <Text className="text-base text-foreground flex-1">
                   {habit.text}
                 </Text>
               </View>
             ))}
           </View>
         ) : (
-          <Text className="text-sm text-muted">
+          <Text className="text-base text-muted">
             Nenhum hábito para esta fase. Toque para adicionar.
           </Text>
         )}
 
-        <Text className="text-xs font-medium text-primary">
+        <Text className="text-sm font-medium text-primary">
           Editar hábitos desta fase
         </Text>
       </PressableScale>
@@ -217,7 +217,7 @@ export default function ProgressScreen() {
       >
         <View>
           <Text className="text-2xl font-bold text-primary">Progresso</Text>
-          <Text className="text-sm text-muted mt-1">Últimos 30 dias</Text>
+          <Text className="text-base text-muted mt-1">Últimos 30 dias</Text>
         </View>
 
         <Animated.View
@@ -227,41 +227,41 @@ export default function ProgressScreen() {
         >
           <View className="flex-1 bg-white rounded-2xl p-4 border border-border gap-1">
             <View className="flex-row items-center gap-1.5">
-              <Smile size={14} color="#9ca3af" />
-              <Text className="text-xs text-muted">Humor médio</Text>
+              <Smile size={16} color="#9ca3af" />
+              <Text className="text-sm text-muted">Humor médio</Text>
             </View>
             {avgMood !== null ? (
               <>
                 <Text className="text-2xl font-bold text-primary">
                   {avgMood}
                 </Text>
-                <Text className="text-xs text-muted">
+                <Text className="text-sm text-muted">
                   {MOOD_LABELS[Math.round(avgMood)]}
                 </Text>
                 <MiniBar value={avgMood} />
               </>
             ) : (
-              <Text className="text-sm text-muted mt-1">-</Text>
+              <Text className="text-base text-muted mt-1">-</Text>
             )}
           </View>
 
           <View className="flex-1 bg-white rounded-2xl p-4 border border-border gap-1">
             <View className="flex-row items-center gap-1.5">
-              <Zap size={14} color="#9ca3af" />
-              <Text className="text-xs text-muted">Energia média</Text>
+              <Zap size={16} color="#9ca3af" />
+              <Text className="text-sm text-muted">Energia média</Text>
             </View>
             {avgEnergy !== null ? (
               <>
                 <Text className="text-2xl font-bold text-primary">
                   {avgEnergy}
                 </Text>
-                <Text className="text-xs text-muted">
+                <Text className="text-sm text-muted">
                   {ENERGY_LABELS[Math.round(avgEnergy)]}
                 </Text>
                 <MiniBar value={avgEnergy} />
               </>
             ) : (
-              <Text className="text-sm text-muted mt-1">-</Text>
+              <Text className="text-base text-muted mt-1">-</Text>
             )}
           </View>
         </Animated.View>
@@ -281,8 +281,8 @@ export default function ProgressScreen() {
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
           <View className="flex-row items-center gap-1.5">
-            <Activity size={14} color="#9ca3af" />
-            <Text className="text-base font-semibold text-foreground">
+            <Activity size={16} color="#9ca3af" />
+            <Text className="text-lg font-semibold text-foreground">
               Top sintomas
             </Text>
           </View>
@@ -293,9 +293,9 @@ export default function ProgressScreen() {
                   key={s.name}
                   className="flex-row items-center justify-between"
                 >
-                  <Text className="text-sm text-foreground">{s.name}</Text>
+                  <Text className="text-base text-foreground">{s.name}</Text>
                   <View className="bg-accent-light px-2 py-0.5 rounded-full">
-                    <Text className="text-xs text-primary font-medium">
+                    <Text className="text-sm text-primary font-medium">
                       {s.count}x
                     </Text>
                   </View>
@@ -303,7 +303,7 @@ export default function ProgressScreen() {
               ))}
             </View>
           ) : (
-            <Text className="text-sm text-muted">
+            <Text className="text-base text-muted">
               Nenhum sintoma registrado.
             </Text>
           )}
@@ -315,7 +315,7 @@ export default function ProgressScreen() {
             entering={FadeInDown.delay(150).duration(250)}
             className="bg-white rounded-2xl p-4 border border-border gap-3"
           >
-            <Text className="text-base font-semibold text-foreground">
+            <Text className="text-lg font-semibold text-foreground">
               Registros recentes
             </Text>
             <View className="gap-2">
@@ -327,7 +327,7 @@ export default function ProgressScreen() {
                     key={log.date}
                     className="flex-row items-center justify-between py-2 border-b border-border"
                   >
-                    <Text className="text-xs text-muted w-16">
+                    <Text className="text-sm text-muted w-16">
                       {new Date(log.date).toLocaleDateString("pt-BR", {
                         day: "2-digit",
                         month: "2-digit",
@@ -335,14 +335,14 @@ export default function ProgressScreen() {
                     </Text>
                     <View className="flex-row gap-4 flex-1 justify-end">
                       <View className="flex-row items-center gap-1">
-                        <Smile size={12} color="#9ca3af" />
-                        <Text className="text-xs text-foreground">
+                        <Smile size={14} color="#9ca3af" />
+                        <Text className="text-sm text-foreground">
                           {log.mood ?? "-"}
                         </Text>
                       </View>
                       <View className="flex-row items-center gap-1">
-                        <Zap size={12} color="#9ca3af" />
-                        <Text className="text-xs text-foreground">
+                        <Zap size={14} color="#9ca3af" />
+                        <Text className="text-sm text-foreground">
                           {log.energy ?? "-"}
                         </Text>
                       </View>
@@ -355,7 +355,7 @@ export default function ProgressScreen() {
 
         {!hasData && (
           <View className="bg-white rounded-2xl p-6 border border-border items-center">
-            <Text className="text-sm text-muted text-center">
+            <Text className="text-base text-muted text-center">
               Nenhum registro ainda. Comece a registrar no dashboard!
             </Text>
           </View>

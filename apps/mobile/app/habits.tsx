@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { View, Text, TextInput, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { ChevronLeft, Plus, X } from "lucide-react-native";
@@ -37,7 +38,7 @@ function PhaseSelector({
             style={{ backgroundColor: active ? "#7C6FCD" : "transparent" }}
           >
             <Text
-              className="text-xs font-semibold"
+              className="text-sm font-semibold"
               style={{ color: active ? "#ffffff" : "#9ca3af" }}
             >
               {p.label}
@@ -113,21 +114,21 @@ export default function HabitsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <ScrollView className="flex-1" contentContainerStyle={{ padding: 24, gap: 20 }}>
+      <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 20 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
         <View className="flex-row items-center gap-2">
           <PressableScale onPress={() => router.back()} className="p-1 -ml-1">
             <ChevronLeft size={24} color="#111827" />
           </PressableScale>
           <View>
             <Text className="text-2xl font-bold text-primary">Hábitos</Text>
-            <Text className="text-sm text-muted">{locked ? "Hábitos da sua fase atual" : "Mapeie hábitos para cada fase"}</Text>
+            <Text className="text-base text-muted">{locked ? "Hábitos da sua fase atual" : "Mapeie hábitos para cada fase"}</Text>
           </View>
         </View>
 
         {locked ? (
           <View className="bg-accent-light rounded-2xl p-3 gap-1">
-            <Text className="text-sm font-semibold text-primary">Fase {phaseLabel}</Text>
-            <Text className="text-xs text-muted leading-4">
+            <Text className="text-base font-semibold text-primary">Fase {phaseLabel}</Text>
+            <Text className="text-sm text-muted leading-4">
               Você está editando os hábitos da sua fase atual. Para configurar outras fases, acesse Config › Hábitos.
             </Text>
           </View>
@@ -135,16 +136,16 @@ export default function HabitsScreen() {
           <PhaseSelector value={phase} onChange={setPhase} />
         )}
 
-        <Text className="text-sm text-muted leading-5">{phaseDescription}</Text>
+        <Text className="text-base text-muted leading-5">{phaseDescription}</Text>
 
         <Animated.View
           key={`mine-${phase}`}
           entering={FadeInDown.duration(200)}
           className="bg-white rounded-2xl p-4 border border-border gap-3"
         >
-          <Text className="text-base font-semibold text-foreground">Meus hábitos</Text>
+          <Text className="text-lg font-semibold text-foreground">Meus hábitos</Text>
           {phaseHabits.length === 0 ? (
-            <Text className="text-sm text-muted">
+            <Text className="text-base text-muted">
               Nenhum hábito nesta fase ainda. Adicione um abaixo ou use as sugestões.
             </Text>
           ) : (
@@ -153,9 +154,9 @@ export default function HabitsScreen() {
                 key={h.id}
                 className="flex-row items-center justify-between bg-surface rounded-xl px-3 py-2.5"
               >
-                <Text className="text-sm text-foreground flex-1">{h.text}</Text>
+                <Text className="text-base text-foreground flex-1">{h.text}</Text>
                 <PressableScale onPress={() => removeHabit(h.id)} className="p-1">
-                  <X size={16} color="#9ca3af" />
+                  <X size={18} color="#9ca3af" />
                 </PressableScale>
               </View>
             ))
@@ -164,7 +165,7 @@ export default function HabitsScreen() {
           <View className="flex-row items-center gap-2 mt-1">
             <TextInput
               className="flex-1 bg-surface border border-border rounded-xl text-foreground"
-              style={{ height: 44, paddingHorizontal: 14, fontSize: 14 }}
+              style={{ height: 44, paddingHorizontal: 14, fontSize: 16 }}
               value={customText}
               onChangeText={setCustomText}
               placeholder="Criar hábito próprio"
@@ -190,7 +191,7 @@ export default function HabitsScreen() {
             entering={FadeInDown.delay(50).duration(200)}
             className="bg-white rounded-2xl p-4 border border-border gap-3"
           >
-            <Text className="text-base font-semibold text-foreground">Sugestões</Text>
+            <Text className="text-lg font-semibold text-foreground">Sugestões</Text>
             <View className="gap-2">
               {suggestions.map((s) => (
                 <PressableScale
@@ -199,14 +200,14 @@ export default function HabitsScreen() {
                   haptic
                   className="flex-row items-center gap-2 bg-surface rounded-xl px-3 py-2.5"
                 >
-                  <Plus size={16} color="#7C6FCD" />
-                  <Text className="text-sm text-foreground flex-1">{s}</Text>
+                  <Plus size={18} color="#7C6FCD" />
+                  <Text className="text-base text-foreground flex-1">{s}</Text>
                 </PressableScale>
               ))}
             </View>
           </Animated.View>
         )}
-      </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
