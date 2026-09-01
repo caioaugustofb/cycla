@@ -13,10 +13,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon-foreground.png",
+        "backgroundColor": "#EDE9FE"
       },
       "predictiveBackGestureEnabled": false,
       "package": "com.anonymous.cyclamobile"
@@ -28,9 +26,17 @@
       "expo-router",
       "expo-status-bar",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon-foreground.png",
+          "color": "#7C6FCD"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
-          "backgroundColor": "#EDE9FE"
+          "backgroundColor": "#EDE9FE",
+          "image": "./assets/splash-blank.png"
         }
       ]
     ]
