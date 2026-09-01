@@ -3,10 +3,21 @@ import { useEffect, useState } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { GreetingScreen } from "@/components/GreetingScreen";
+import { ToastProvider } from "@/components/Toast";
+import {
+  getExerciseRemindersEnabled,
+  getPeriodRemindersEnabled,
+} from "@/lib/notification-prefs";
+import {
+  scheduleExerciseReminders,
+  schedulePeriodReminders,
+} from "@/lib/notifications";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -25,6 +36,16 @@ function RootNavigation() {
     const t = setTimeout(() => setMinElapsed(true), 1500);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    getExerciseRemindersEnabled().then((on) => {
+      if (on) scheduleExerciseReminders();
+    });
+    getPeriodRemindersEnabled().then((on) => {
+      if (on) schedulePeriodReminders();
+    });
+  }, [user]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -59,10 +80,16 @@ function RootNavigation() {
 
 export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
-        <RootNavigation />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <KeyboardProvider>
+          <AuthProvider>
+            <ToastProvider>
+              <RootNavigation />
+            </ToastProvider>
+          </AuthProvider>
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

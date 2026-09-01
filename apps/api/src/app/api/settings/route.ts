@@ -17,9 +17,13 @@ export async function GET() {
   return NextResponse.json(userData);
 }
 
+const isDev = process.env.NODE_ENV === "development";
+
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
-  cycleLength: z.number().int().min(21).max(45).optional(),
+  cycleLength: isDev
+    ? z.number().int().min(1).max(400).optional()
+    : z.number().int().min(21).max(45).optional(),
 });
 
 export async function PATCH(req: NextRequest) {
