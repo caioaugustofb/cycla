@@ -127,3 +127,30 @@ export function calculateCycleStatus(
     phaseInfo: PHASE_INFO[phase],
   };
 }
+
+const MIN_REASONABLE_CYCLE = 15;
+const MAX_REASONABLE_CYCLE = 60;
+const MAX_CYCLES_CONSIDERED = 6;
+const MIN_SAMPLES = 2;
+
+//intervalos fora da faixa razoável indicam registro perdido, não um ciclo real
+export function averageCycleLength(
+  startDates: (Date | string)[],
+  fallback: number,
+): number {
+  const days = startDates
+    .map((d) => {
+      const x = new Date(d);
+      return Date.UTC(x.getUTCFullYear(), x.getUTCMonth(), x.getUTCDate());
+    })
+    .sort((a, b) => b - a);
+
+  const gaps: number[] = [];
+  for (let i = 0; i < days.length - 1 && gaps.length < MAX_CYCLES_CONSIDERED; i++) {
+    const gap = Math.round((days[i] - days[i + 1]) / 86400000);
+    if (gap >= MIN_REASONABLE_CYCLE && gap <= MAX_REASONABLE_CYCLE) gaps.push(gap);
+  }
+
+  if (gaps.length < MIN_SAMPLES) return fallback;
+  return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+}

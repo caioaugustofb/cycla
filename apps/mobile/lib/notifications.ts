@@ -1,6 +1,6 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { calculateCycleStatus, type CyclePhase } from "@cycla/core";
+import { calculateCycleStatus, averageCycleLength, type CyclePhase } from "@cycla/core";
 import { apiFetch } from "./api";
 import { pickMessage, pickPeriodMessage } from "./notification-messages";
 
@@ -148,7 +148,11 @@ export async function schedulePeriodReminders(): Promise<ScheduleResult> {
   }
 
   const { startDate, cycleLength } = cycles[0];
-  const status = calculateCycleStatus(startDate, cycleLength ?? 28);
+  const length = averageCycleLength(
+    cycles.map((c: { startDate: string }) => c.startDate),
+    cycleLength ?? 28,
+  );
+  const status = calculateCycleStatus(startDate, length);
 
   await cancelPeriodReminders();
 
