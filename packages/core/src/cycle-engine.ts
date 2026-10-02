@@ -1,3 +1,5 @@
+import { DEFAULT_PERIOD_LENGTH } from "./profile";
+
 export type CyclePhase = "menstrual" | "follicular" | "ovulatory" | "luteal";
 
 export interface CycleStatus {
@@ -45,15 +47,18 @@ const PHASE_INFO: Record<CyclePhase, { name: string; energy: string; description
   },
 };
 
-function getPhase(cycleDay: number): CyclePhase {
-  if (cycleDay <= 5) return "menstrual";
+export function phaseForCycleDay(
+  cycleDay: number,
+  periodLength: number = DEFAULT_PERIOD_LENGTH,
+): CyclePhase {
+  if (cycleDay <= periodLength) return "menstrual";
   if (cycleDay <= 12) return "follicular";
   if (cycleDay <= 16) return "ovulatory";
   return "luteal";
 }
 
-function getPhaseEndDay(phase: CyclePhase, cycleLength: number): number {
-  if (phase === "menstrual") return 5;
+function getPhaseEndDay(phase: CyclePhase, cycleLength: number, periodLength: number): number {
+  if (phase === "menstrual") return periodLength;
   if (phase === "follicular") return 12;
   if (phase === "ovulatory") return 16;
   return cycleLength;
@@ -63,6 +68,7 @@ export function calculateCycleStatus(
   lastPeriodDate: Date | string,
   cycleLength: number,
   today: Date = new Date(),
+  periodLength: number = DEFAULT_PERIOD_LENGTH,
 ): CycleStatus {
   const msPerDay = 1000 * 60 * 60 * 24;
 
@@ -109,11 +115,17 @@ export function calculateCycleStatus(
     };
   }
 
-  const phase = getPhase(currentDay);
-  const phaseEndDay = getPhaseEndDay(phase, cycleLength);
+  const phase = phaseForCycleDay(currentDay, periodLength);
+  const phaseEndDay = getPhaseEndDay(phase, cycleLength, periodLength);
   const phaseDay =
     currentDay -
-    (phase === "menstrual" ? 0 : phase === "follicular" ? 5 : phase === "ovulatory" ? 12 : 16);
+    (phase === "menstrual"
+      ? 0
+      : phase === "follicular"
+        ? periodLength
+        : phase === "ovulatory"
+          ? 12
+          : 16);
   const daysLeftInPhase = phaseEndDay - currentDay;
 
   return {

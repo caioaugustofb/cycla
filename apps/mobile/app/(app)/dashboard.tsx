@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CalendarDays, Zap, Timer, Check, Sparkles } from "lucide-react-native";
+import { CalendarDays, Zap, Timer, Check, Sparkles, Info } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, {
   FadeInDown,
@@ -62,6 +62,11 @@ const SYMPTOM_OPTIONS = [
   "Humor instável",
 ];
 
+type DashboardStatus = CycleStatus & {
+  cycleRegularity: "regular" | "irregular" | null;
+  usesHormonalContraceptive: boolean;
+};
+
 type DailyLog = {
   mood: number | null;
   energy: number | null;
@@ -83,7 +88,7 @@ export default function DashboardScreen() {
       setAnimKey((k) => k + 1);
     }, []),
   );
-  const [status, setStatus] = useState<CycleStatus | null>(null);
+  const [status, setStatus] = useState<DashboardStatus | null>(null);
   const [log, setLog] = useState<DailyLog>({
     mood: null,
     energy: null,
@@ -293,6 +298,18 @@ export default function DashboardScreen() {
                 {status.phaseInfo.description}
               </Text>
             </View>
+            {status.usesHormonalContraceptive && (
+              <View
+                className="flex-row gap-2 rounded-xl p-3"
+                style={{ backgroundColor: accent.tint }}
+              >
+                <Info size={16} color={accent.color} style={{ marginTop: 2, flexShrink: 0 }} />
+                <Text className="text-sm flex-1" style={{ color: accent.color }}>
+                  Com anticoncepcional hormonal, seu corpo não passa pelas fases naturais da mesma
+                  forma. Use as fases como referência, não como regra.
+                </Text>
+              </View>
+            )}
             <View className="flex-row gap-3 mt-1">
               <View
                 className="rounded-xl px-3 py-2 flex-row items-center gap-2"
@@ -354,10 +371,14 @@ export default function DashboardScreen() {
               <Text className="text-xl font-bold" style={{ color: "#B4801A" }}>
                 {status.daysLate === 0
                   ? "Menstruação esperada hoje"
-                  : `Atrasada há ${status.daysLate} ${status.daysLate === 1 ? "dia" : "dias"}`}
+                  : status.cycleRegularity === "irregular"
+                    ? `${status.daysLate} ${status.daysLate === 1 ? "dia" : "dias"} após a previsão`
+                    : `Atrasada há ${status.daysLate} ${status.daysLate === 1 ? "dia" : "dias"}`}
               </Text>
               <Text className="text-base text-foreground-secondary mt-1">
-                Variações no ciclo são comuns. Assim que sua menstruação começar, registre para o app voltar a acompanhar suas fases.
+                {status.cycleRegularity === "irregular"
+                  ? "Como seu ciclo costuma ser irregular, alguns dias de diferença podem ser normais para você. Quando a menstruação começar, registre aqui."
+                  : "Variações no ciclo são comuns. Assim que sua menstruação começar, registre para o app voltar a acompanhar suas fases."}
               </Text>
             </View>
 

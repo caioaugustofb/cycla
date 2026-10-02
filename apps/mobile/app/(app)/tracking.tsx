@@ -25,7 +25,7 @@ import Animated, {
 import Swipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
-import { cycleLengthStats } from "@cycla/core";
+import { cycleLengthStats, phaseForCycleDay, DEFAULT_PERIOD_LENGTH } from "@cycla/core";
 import { apiFetch } from "@/lib/api";
 import { PressableScale } from "@/components/PressableScale";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -76,6 +76,7 @@ function getPhaseForDate(
   date: Date,
   lastPeriodDate: Date,
   cycleLength: number,
+  periodLength: number,
 ): CyclePhase | null {
   const msPerDay = 1000 * 60 * 60 * 24;
   // startDate vem como meia-noite UTC; setHours() usaria o fuso local e perderia um dia em UTC-3.
@@ -88,11 +89,7 @@ function getPhaseForDate(
   d.setHours(0, 0, 0, 0);
   const diff = Math.floor((d.getTime() - start.getTime()) / msPerDay);
   if (diff < 0) return null;
-  const dayOfCycle = (diff % cycleLength) + 1;
-  if (dayOfCycle <= 5) return "menstrual";
-  if (dayOfCycle <= 12) return "follicular";
-  if (dayOfCycle <= 16) return "ovulatory";
-  return "luteal";
+  return phaseForCycleDay((diff % cycleLength) + 1, periodLength);
 }
 
 function isToday(date: Date): boolean {
@@ -237,10 +234,12 @@ function MonthlyCalendar({
   year,
   month,
   cycles,
+  periodLength,
 }: {
   year: number;
   month: number;
   cycles: Cycle[];
+  periodLength: number;
 }) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
@@ -275,7 +274,7 @@ function MonthlyCalendar({
           {days.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, colIdx) => {
             if (!day) return <View key={colIdx} style={{ flex: 1 }} />;
             const phase = lastPeriodDate
-              ? getPhaseForDate(day, lastPeriodDate, cycleLength)
+              ? getPhaseForDate(day, lastPeriodDate, cycleLength, periodLength)
               : null;
             const today = isToday(day);
             return (
@@ -319,9 +318,11 @@ function MonthlyCalendar({
 function WeeklyCalendar({
   weekStart,
   cycles,
+  periodLength,
 }: {
   weekStart: Date;
   cycles: Cycle[];
+  periodLength: number;
 }) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
@@ -337,7 +338,7 @@ function WeeklyCalendar({
     <View style={{ flexDirection: "row", gap: 6 }}>
       {days.map((day, i) => {
         const phase = lastPeriodDate
-          ? getPhaseForDate(day, lastPeriodDate, cycleLength)
+          ? getPhaseForDate(day, lastPeriodDate, cycleLength, periodLength)
           : null;
         const today = isToday(day);
         return (
@@ -391,6 +392,7 @@ function WeeklyCalendar({
 export default function TrackingScreen() {
   const toast = useToast();
   const [cycles, setCycles] = useState<Cycle[]>([]);
+  const [periodLength, setPeriodLength] = useState(DEFAULT_PERIOD_LENGTH);
   const [cycleToDelete, setCycleToDelete] = useState<Cycle | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -402,8 +404,15 @@ export default function TrackingScreen() {
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
-    const res = await apiFetch("/api/cycle");
+    const [res, settingsRes] = await Promise.all([
+      apiFetch("/api/cycle"),
+      apiFetch("/api/settings"),
+    ]);
     if (res.ok) setCycles(await res.json());
+    if (settingsRes.ok) {
+      const settings = await settingsRes.json();
+      setPeriodLength(settings.periodLength ?? DEFAULT_PERIOD_LENGTH);
+    }
     setLoading(false);
   }, []);
 
@@ -642,9 +651,10 @@ export default function TrackingScreen() {
               year={currentDate.getFullYear()}
               month={currentDate.getMonth()}
               cycles={cycles}
+              periodLength={periodLength}
             />
           ) : (
-            <WeeklyCalendar weekStart={weekStart} cycles={cycles} />
+            <WeeklyCalendar weekStart={weekStart} cycles={cycles} periodLength={periodLength} />
           )}
 
           {/* Legend */}

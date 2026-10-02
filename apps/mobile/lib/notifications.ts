@@ -1,6 +1,13 @@
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import { calculateCycleStatus, averageCycleLength, type CyclePhase } from "@cycla/core";
+import {
+  calculateCycleStatus,
+  averageCycleLength,
+  DEFAULT_PERIOD_LENGTH,
+  REMINDER_HOURS,
+  type CyclePhase,
+  type ReminderPeriod,
+} from "@cycla/core";
 import { apiFetch } from "./api";
 import { pickMessage, pickPeriodMessage } from "./notification-messages";
 
@@ -65,6 +72,30 @@ async function cancelExerciseReminders() {
   );
 }
 
+type Preferences = { periodLength: number; reminderPeriod: ReminderPeriod | null };
+
+async function loadPreferences(): Promise<Preferences> {
+  const res = await apiFetch("/api/settings");
+  if (!res.ok) return { periodLength: DEFAULT_PERIOD_LENGTH, reminderPeriod: null };
+  const data = await res.json();
+  return {
+    periodLength: data.periodLength ?? DEFAULT_PERIOD_LENGTH,
+    reminderPeriod: data.reminderPeriod ?? null,
+  };
+}
+
+// Na ovulatória há dois lembretes; o segundo vem 4h depois, ou 4h antes se passaria das 21h.
+function exerciseTimes(phase: CyclePhase, reminderPeriod: ReminderPeriod | null) {
+  if (!reminderPeriod) return PHASE_TIMES[phase];
+  const hour = REMINDER_HOURS[reminderPeriod];
+  if (phase !== "ovulatory") return [{ hour, minute: 0 }];
+  const second = hour + 4 <= 21 ? hour + 4 : hour - 4;
+  return [
+    { hour: Math.min(hour, second), minute: 0 },
+    { hour: Math.max(hour, second), minute: 0 },
+  ];
+}
+
 export type ScheduleResult =
   | { ok: true; count: number }
   | { ok: false; reason: "permission" | "no-cycle" | "error" };
@@ -81,7 +112,11 @@ export async function scheduleExerciseReminders(): Promise<ScheduleResult> {
   }
 
   const { startDate, cycleLength } = cycles[0];
-  const length = cycleLength ?? 28;
+  const length = averageCycleLength(
+    cycles.map((c: { startDate: string }) => c.startDate),
+    cycleLength ?? 28,
+  );
+  const { periodLength, reminderPeriod } = await loadPreferences();
 
   await cancelExerciseReminders();
 
@@ -94,9 +129,9 @@ export async function scheduleExerciseReminders(): Promise<ScheduleResult> {
     day.setDate(now.getDate() + d);
     day.setHours(0, 0, 0, 0);
 
-    const phase = calculateCycleStatus(startDate, length, day).phase;
+    const phase = calculateCycleStatus(startDate, length, day, periodLength).phase;
 
-    for (const t of PHASE_TIMES[phase]) {
+    for (const t of exerciseTimes(phase, reminderPeriod)) {
       const fireAt = new Date(day);
       fireAt.setHours(t.hour, t.minute, 0, 0);
       if (fireAt.getTime() <= now.getTime()) continue;
