@@ -20,6 +20,7 @@ export default function OnboardingScreen() {
   const [cycleLength, setCycleLength] = useState("28");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [knowsCycle, setKnowsCycle] = useState(false);
 
   const cycleLengthNum = parseInt(cycleLength, 10);
   const showOligomenorrheaWarning =
@@ -52,7 +53,7 @@ export default function OnboardingScreen() {
     }
 
     const length = parseInt(cycleLength, 10);
-    if (isNaN(length) || length < 21 || length > 45) {
+    if (knowsCycle && (isNaN(length) || length < 21 || length > 45)) {
       setError("Duração do ciclo deve ser entre 21 e 45 dias");
       return;
     }
@@ -60,7 +61,10 @@ export default function OnboardingScreen() {
     setLoading(true);
     const res = await apiFetch("/api/onboarding", {
       method: "POST",
-      body: JSON.stringify({ lastPeriodDate: parsedDate, cycleLength: length }),
+      body: JSON.stringify({
+        lastPeriodDate: parsedDate,
+        ...(knowsCycle && { cycleLength: length }),
+      }),
     });
     setLoading(false);
 
@@ -111,31 +115,65 @@ export default function OnboardingScreen() {
 
               <View>
                 <Text className="text-sm font-medium text-foreground mb-1.5">
-                  Duração do seu ciclo (dias)
+                  Sabe quanto dura o seu ciclo?
                 </Text>
-                <TextInput
-                  className="bg-white border border-border rounded-xl text-foreground w-16"
-                  style={{ height: 40, paddingHorizontal: 8, fontSize: 14, textAlign: "center" }}
-                  placeholder="28"
-                  placeholderTextColor="#9ca3af"
-                  value={cycleLength}
-                  onChangeText={setCycleLength}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                />
-                <Text className="text-xs text-muted mt-1.5">
-                  Do 1º dia da menstruação até o início da próxima. Média: 28 dias.
-                </Text>
-
-                {showOligomenorrheaWarning && (
-                  <View className="flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 mt-2">
-                    <AlertTriangle size={14} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
-                    <Text className="text-xs text-amber-800 flex-1">
-                      Ciclos acima de 35 dias podem indicar{" "}
-                      <Text className="font-semibold">oligomenorreia</Text> — associada a SOP,
-                      hipotireoidismo ou alterações hormonais. Considere consultar um ginecologista.
+                <View className="flex-row gap-2">
+                  {[
+                    { value: false, label: "Não sei" },
+                    { value: true, label: "Sei" },
+                  ].map((opt) => {
+                    const active = knowsCycle === opt.value;
+                    return (
+                      <PressableScale
+                        key={opt.label}
+                        onPress={() => setKnowsCycle(opt.value)}
+                        className="px-4 py-2 rounded-xl border"
+                        style={{
+                          backgroundColor: active ? "#7C6FCD" : "#F5F0FF",
+                          borderColor: active ? "#7C6FCD" : "rgba(124,111,205,0.15)",
+                        }}
+                      >
+                        <Text
+                          className="text-sm font-medium"
+                          style={{ color: active ? "#fff" : "#9ca3af" }}
+                        >
+                          {opt.label}
+                        </Text>
+                      </PressableScale>
+                    );
+                  })}
+                </View>
+                {knowsCycle ? (
+                  <View className="mt-3">
+                    <TextInput
+                      className="bg-white border border-border rounded-xl text-foreground w-16"
+                      style={{ height: 40, paddingHorizontal: 8, fontSize: 14, textAlign: "center" }}
+                      placeholder="28"
+                      placeholderTextColor="#9ca3af"
+                      value={cycleLength}
+                      onChangeText={setCycleLength}
+                      keyboardType="number-pad"
+                      maxLength={2}
+                    />
+                    <Text className="text-xs text-muted mt-1.5">
+                      Do primeiro dia da menstruação até o início da próxima, em dias.
                     </Text>
+
+                    {showOligomenorrheaWarning && (
+                      <View className="flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 mt-2">
+                        <AlertTriangle size={14} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
+                        <Text className="text-xs text-amber-800 flex-1">
+                          Ciclos acima de 35 dias podem indicar{" "}
+                          <Text className="font-semibold">oligomenorreia</Text> - associada a SOP,
+                          hipotireoidismo ou alterações hormonais. Considere consultar um ginecologista.
+                        </Text>
+                      </View>
+                    )}
                   </View>
+                ) : (
+                  <Text className="text-xs text-muted mt-1.5">
+                    Sem problema. O app calcula a duração a partir dos seus registros.
+                  </Text>
                 )}
               </View>
 

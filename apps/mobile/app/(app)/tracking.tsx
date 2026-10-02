@@ -9,11 +9,23 @@ import {
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
-import { CalendarDays, Plus, X, ChevronLeft, ChevronRight, Trash2 } from "lucide-react-native";
-import Animated, { FadeInDown, useAnimatedStyle, type SharedValue } from "react-native-reanimated";
+import {
+  CalendarDays,
+  Plus,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Trash2,
+} from "lucide-react-native";
+import Animated, {
+  FadeInDown,
+  useAnimatedStyle,
+  type SharedValue,
+} from "react-native-reanimated";
 import Swipeable, {
   type SwipeableMethods,
 } from "react-native-gesture-handler/ReanimatedSwipeable";
+import { cycleLengthStats } from "@cycla/core";
 import { apiFetch } from "@/lib/api";
 import { PressableScale } from "@/components/PressableScale";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -46,14 +58,24 @@ const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const ACTION_WIDTH = 88;
 
 const MONTH_NAMES = [
-  "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+  "Janeiro",
+  "Fevereiro",
+  "Março",
+  "Abril",
+  "Maio",
+  "Junho",
+  "Julho",
+  "Agosto",
+  "Setembro",
+  "Outubro",
+  "Novembro",
+  "Dezembro",
 ];
 
 function getPhaseForDate(
   date: Date,
   lastPeriodDate: Date,
-  cycleLength: number
+  cycleLength: number,
 ): CyclePhase | null {
   const msPerDay = 1000 * 60 * 60 * 24;
   // startDate vem como meia-noite UTC; setHours() usaria o fuso local e perderia um dia em UTC-3.
@@ -113,7 +135,9 @@ function cycleDuration(current: Cycle, newer: Cycle | undefined): string {
   if (!newer) return "Em andamento";
   const start = new Date(current.startDate);
   const end = new Date(newer.startDate);
-  const days = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const days = Math.round(
+    (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24),
+  );
   return `${days} dias`;
 }
 
@@ -182,12 +206,18 @@ function CycleHistoryItem({
             <Text className="text-base font-semibold text-foreground">
               {formatDate(cycle.startDate)}
             </Text>
-            <Text className="text-sm text-muted mt-0.5">Início da menstruação</Text>
+            <Text className="text-sm text-muted mt-0.5">
+              Início da menstruação
+            </Text>
           </View>
         </View>
         <View className="items-end">
-          <Text className="text-base font-semibold text-primary">{duration}</Text>
-          {isCurrent && <Text className="text-sm text-muted mt-0.5">Ciclo atual</Text>}
+          <Text className="text-base font-semibold text-primary">
+            {duration}
+          </Text>
+          {isCurrent && (
+            <Text className="text-sm text-muted mt-0.5">Ciclo atual</Text>
+          )}
         </View>
       </View>
     </Swipeable>
@@ -203,7 +233,15 @@ function getWeekStart(d: Date): Date {
   return monday;
 }
 
-function MonthlyCalendar({ year, month, cycles }: { year: number; month: number; cycles: Cycle[] }) {
+function MonthlyCalendar({
+  year,
+  month,
+  cycles,
+}: {
+  year: number;
+  month: number;
+  cycles: Cycle[];
+}) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
   const cycleLength = latest?.cycleLength ?? 28;
@@ -214,7 +252,10 @@ function MonthlyCalendar({ year, month, cycles }: { year: number; month: number;
 
   const days: (Date | null)[] = [
     ...Array(startPadding).fill(null),
-    ...Array.from({ length: lastDay.getDate() }, (_, i) => new Date(year, month, i + 1)),
+    ...Array.from(
+      { length: lastDay.getDate() },
+      (_, i) => new Date(year, month, i + 1),
+    ),
   ];
   while (days.length % 7 !== 0) days.push(null);
 
@@ -223,7 +264,9 @@ function MonthlyCalendar({ year, month, cycles }: { year: number; month: number;
       <View style={{ flexDirection: "row", marginBottom: 4 }}>
         {DAY_NAMES.map((d) => (
           <View key={d} style={{ flex: 1, alignItems: "center" }}>
-            <Text style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "500" }}>{d}</Text>
+            <Text style={{ fontSize: 11, color: "#9CA3AF", fontWeight: "500" }}>
+              {d}
+            </Text>
           </View>
         ))}
       </View>
@@ -231,16 +274,23 @@ function MonthlyCalendar({ year, month, cycles }: { year: number; month: number;
         <View key={rowIdx} style={{ flexDirection: "row", marginBottom: 4 }}>
           {days.slice(rowIdx * 7, rowIdx * 7 + 7).map((day, colIdx) => {
             if (!day) return <View key={colIdx} style={{ flex: 1 }} />;
-            const phase = lastPeriodDate ? getPhaseForDate(day, lastPeriodDate, cycleLength) : null;
+            const phase = lastPeriodDate
+              ? getPhaseForDate(day, lastPeriodDate, cycleLength)
+              : null;
             const today = isToday(day);
             return (
-              <View key={colIdx} style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}>
+              <View
+                key={colIdx}
+                style={{ flex: 1, alignItems: "center", paddingVertical: 2 }}
+              >
                 <View
                   style={{
                     width: 34,
                     height: 34,
                     borderRadius: 17,
-                    backgroundColor: phase ? PHASE_COLORS[phase] : "transparent",
+                    backgroundColor: phase
+                      ? PHASE_COLORS[phase]
+                      : "transparent",
                     alignItems: "center",
                     justifyContent: "center",
                     borderWidth: today ? 2 : 0,
@@ -266,7 +316,13 @@ function MonthlyCalendar({ year, month, cycles }: { year: number; month: number;
   );
 }
 
-function WeeklyCalendar({ weekStart, cycles }: { weekStart: Date; cycles: Cycle[] }) {
+function WeeklyCalendar({
+  weekStart,
+  cycles,
+}: {
+  weekStart: Date;
+  cycles: Cycle[];
+}) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
   const cycleLength = latest?.cycleLength ?? 28;
@@ -280,11 +336,15 @@ function WeeklyCalendar({ weekStart, cycles }: { weekStart: Date; cycles: Cycle[
   return (
     <View style={{ flexDirection: "row", gap: 6 }}>
       {days.map((day, i) => {
-        const phase = lastPeriodDate ? getPhaseForDate(day, lastPeriodDate, cycleLength) : null;
+        const phase = lastPeriodDate
+          ? getPhaseForDate(day, lastPeriodDate, cycleLength)
+          : null;
         const today = isToday(day);
         return (
           <View key={i} style={{ flex: 1, alignItems: "center", gap: 6 }}>
-            <Text style={{ fontSize: 11, color: "#9CA3AF" }}>{DAY_NAMES[day.getDay()]}</Text>
+            <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
+              {DAY_NAMES[day.getDay()]}
+            </Text>
             <View
               style={{
                 width: "100%",
@@ -362,7 +422,7 @@ export default function TrackingScreen() {
         return;
       }
       setAnimKey((k) => k + 1);
-    }, [])
+    }, []),
   );
 
   function navigatePrev() {
@@ -395,29 +455,23 @@ export default function TrackingScreen() {
     if (view === "monthly") {
       return `${MONTH_NAMES[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
     }
-    const startStr = weekStart.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
-    const endStr = weekEnd.toLocaleDateString("pt-BR", { day: "numeric", month: "short" });
+    const startStr = weekStart.toLocaleDateString("pt-BR", {
+      day: "numeric",
+      month: "short",
+    });
+    const endStr = weekEnd.toLocaleDateString("pt-BR", {
+      day: "numeric",
+      month: "short",
+    });
     return `${startStr} – ${endStr}`;
   }
 
-  const avgCycleLength =
-    cycles.length > 1
-      ? Math.round(
-          cycles.slice(0, -1).reduce((sum, cycle, i) => {
-            const next = cycles[i + 1];
-            const days = Math.round(
-              (new Date(cycle.startDate).getTime() - new Date(next.startDate).getTime()) /
-                (1000 * 60 * 60 * 24)
-            );
-            return sum + days;
-          }, 0) /
-            (cycles.length - 1)
-        )
-      : null;
+  const avgCycleLength = cycleLengthStats(cycles.map((c) => c.startDate)).average;
 
   async function handleRegister() {
     setError("");
     const parsed = parseDate(date);
+
     if (!parsed) {
       setError("Informe a data no formato DD/MM/AAAA");
       return;
@@ -425,6 +479,7 @@ export default function TrackingScreen() {
     const entered = new Date(parsed);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+
     if (entered > today) {
       setError("A data não pode ser no futuro");
       return;
@@ -435,6 +490,7 @@ export default function TrackingScreen() {
       body: JSON.stringify({ startDate: parsed }),
     });
     setSaving(false);
+
     if (!res.ok) {
       setError("Erro ao salvar. Tente novamente.");
       return;
@@ -447,7 +503,9 @@ export default function TrackingScreen() {
   async function handleDelete() {
     if (!cycleToDelete) return;
     setDeleting(true);
-    const res = await apiFetch(`/api/cycle/${cycleToDelete.id}`, { method: "DELETE" });
+    const res = await apiFetch(`/api/cycle/${cycleToDelete.id}`, {
+      method: "DELETE",
+    });
     setDeleting(false);
     setCycleToDelete(null);
     if (res.ok) {
@@ -468,12 +526,19 @@ export default function TrackingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-surface">
-      <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 16 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 24, gap: 16 }}
+        bottomOffset={20}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* Header */}
         <View className="flex-row items-center justify-between">
           <View>
             <Text className="text-muted text-base">Acompanhamento</Text>
-            <Text className="text-2xl font-bold text-foreground">Meu ciclo</Text>
+            <Text className="text-2xl font-bold text-foreground">
+              Meu ciclo
+            </Text>
           </View>
           <PressableScale
             className="bg-primary rounded-2xl px-4 py-2.5 flex-row items-center gap-2"
@@ -484,7 +549,11 @@ export default function TrackingScreen() {
             }}
             haptic
           >
-            {showForm ? <X size={18} color="#fff" /> : <Plus size={18} color="#fff" />}
+            {showForm ? (
+              <X size={18} color="#fff" />
+            ) : (
+              <Plus size={18} color="#fff" />
+            )}
             <Text className="text-on-primary font-semibold text-base">
               {showForm ? "Cancelar" : "Registrar"}
             </Text>
@@ -507,7 +576,9 @@ export default function TrackingScreen() {
               keyboardType="numeric"
               maxLength={10}
             />
-            {error ? <Text className="text-sm text-danger">{error}</Text> : null}
+            {error ? (
+              <Text className="text-sm text-danger">{error}</Text>
+            ) : null}
             <PressableScale
               className="bg-primary rounded-2xl py-3.5 items-center"
               onPress={handleRegister}
@@ -517,7 +588,9 @@ export default function TrackingScreen() {
               {saving ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text className="text-on-primary font-semibold text-base">Salvar</Text>
+                <Text className="text-on-primary font-semibold text-base">
+                  Salvar
+                </Text>
               )}
             </PressableScale>
           </View>
@@ -549,7 +622,9 @@ export default function TrackingScreen() {
             <PressableScale onPress={navigatePrev} className="p-1">
               <ChevronLeft size={20} color="#7C6FCD" />
             </PressableScale>
-            <Text className="text-base font-semibold text-foreground">{headerLabel()}</Text>
+            <Text className="text-base font-semibold text-foreground">
+              {headerLabel()}
+            </Text>
             <PressableScale onPress={navigateNext} className="p-1">
               <ChevronRight size={20} color="#7C6FCD" />
             </PressableScale>
@@ -584,31 +659,44 @@ export default function TrackingScreen() {
                 borderTopColor: "rgba(124,111,205,0.15)",
               }}
             >
-              {(Object.entries(PHASE_NAMES) as [CyclePhase, string][]).map(([phase, name]) => (
-                <View key={phase} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+              {(Object.entries(PHASE_NAMES) as [CyclePhase, string][]).map(
+                ([phase, name]) => (
                   <View
+                    key={phase}
                     style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: 5,
-                      backgroundColor: PHASE_COLORS[phase],
-                      borderWidth: 1,
-                      borderColor: "rgba(124,111,205,0.3)",
+                      flexDirection: "row",
+                      alignItems: "center",
+                      gap: 6,
                     }}
-                  />
-                  <Text style={{ fontSize: 11, color: "#9CA3AF" }}>{name}</Text>
-                </View>
-              ))}
+                  >
+                    <View
+                      style={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: 5,
+                        backgroundColor: PHASE_COLORS[phase],
+                        borderWidth: 1,
+                        borderColor: "rgba(124,111,205,0.3)",
+                      }}
+                    />
+                    <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
+                      {name}
+                    </Text>
+                  </View>
+                ),
+              )}
             </View>
           )}
         </View>
 
         {/* Stats */}
-        {avgCycleLength && (
+        {cycles.length > 0 && (
           <View className="flex-row gap-3">
             <View className="flex-1 bg-surface-card rounded-2xl p-4 border border-border items-center">
-              <Text className="text-2xl font-bold text-primary">{avgCycleLength}</Text>
-              <Text className="text-sm text-muted mt-1">Dias em média</Text>
+              <Text className="text-2xl font-bold text-primary">{avgCycleLength ?? "—"}</Text>
+              <Text className="text-sm text-muted mt-1">
+                {avgCycleLength ? "Dias em média" : "Média em cálculo"}
+              </Text>
             </View>
             <View className="flex-1 bg-surface-card rounded-2xl p-4 border border-border items-center">
               <Text className="text-2xl font-bold text-primary">{cycles.length}</Text>
@@ -621,7 +709,9 @@ export default function TrackingScreen() {
         {cycles.length === 0 ? (
           <View className="items-center py-12 gap-3">
             <CalendarDays size={40} color="#A78BFA" />
-            <Text className="text-lg font-semibold text-foreground">Nenhum ciclo registrado</Text>
+            <Text className="text-lg font-semibold text-foreground">
+              Nenhum ciclo registrado
+            </Text>
             <Text className="text-base text-muted text-center">
               Registre o início da sua menstruação para começar o histórico.
             </Text>
@@ -629,7 +719,9 @@ export default function TrackingScreen() {
         ) : (
           <View className="gap-3">
             <View className="flex-row items-baseline justify-between">
-              <Text className="text-lg font-semibold text-foreground">Histórico</Text>
+              <Text className="text-lg font-semibold text-foreground">
+                Histórico
+              </Text>
               <Text className="text-sm text-muted">Arraste para excluir</Text>
             </View>
             {cycles.map((cycle, i) => (
