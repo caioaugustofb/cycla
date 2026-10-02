@@ -287,12 +287,25 @@ export default function SettingsScreen() {
                 >
                   {cycleStats?.estimated ?? 28} dias
                 </Text>
+                <View className="flex-row items-center gap-3">
+                  <View className="flex-row gap-1" style={{ width: 72 }}>
+                    {Array.from({ length: cycleStats?.required ?? 3 }, (_, i) => (
+                      <View
+                        key={i}
+                        className="flex-1 rounded-full"
+                        style={{
+                          height: 6,
+                          backgroundColor: i < (cycleStats?.samples ?? 0) ? "#7C6FCD" : "#E5E7EB",
+                        }}
+                      />
+                    ))}
+                  </View>
+                  <Text className="text-sm font-semibold text-primary">
+                    {cycleStats?.samples ?? 0} de {cycleStats?.required ?? 3} ciclos completos
+                  </Text>
+                </View>
                 <Text className="text-sm text-muted">
-                  Estimativa inicial - {cycleStats?.samples ?? 0} de {cycleStats?.required ?? 3}{" "}
-                  ciclos completos
-                </Text>
-                <Text className="text-sm text-muted">
-                  A média real aparece após {cycleStats?.required ?? 3} ciclos.
+                  Estimativa inicial. A média real aparece após {cycleStats?.required ?? 3} ciclos.
                 </Text>
               </>
             )}
