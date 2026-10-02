@@ -9,7 +9,8 @@ import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { GreetingScreen } from "@/components/GreetingScreen";
-import { ToastProvider } from "@/components/Toast";
+import { ToastProvider, useToast } from "@/components/Toast";
+import { setUnauthorizedHandler } from "@/lib/api";
 import {
   getExerciseRemindersEnabled,
   getPeriodRemindersEnabled,
@@ -22,7 +23,8 @@ import {
 SplashScreen.preventAutoHideAsync();
 
 function RootNavigation() {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, logout } = useAuth();
+  const toast = useToast();
   const segments = useSegments() as string[];
   const router = useRouter();
   const [splashComplete, setSplashComplete] = useState(false);
@@ -36,6 +38,14 @@ function RootNavigation() {
     const t = setTimeout(() => setMinElapsed(true), 1500);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    setUnauthorizedHandler(async () => {
+      await logout();
+      toast.info("Sua sessão expirou. Entre novamente.");
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [logout, toast]);
 
   useEffect(() => {
     if (!user) return;

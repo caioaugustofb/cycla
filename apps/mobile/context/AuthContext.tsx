@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { API_BASE } from "@/lib/api";
+import { API_BASE, isTokenExpired } from "@/lib/api";
 
 type User = { id: string; name: string; email: string };
 
@@ -26,8 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const storedToken = await AsyncStorage.getItem("@cycla:token");
       const storedUser = await AsyncStorage.getItem("@cycla:user");
       if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        if (isTokenExpired(storedToken)) {
+          await AsyncStorage.removeItem("@cycla:token");
+          await AsyncStorage.removeItem("@cycla:user");
+        } else {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
       }
       setIsLoading(false);
     }
