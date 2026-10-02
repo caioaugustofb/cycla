@@ -41,7 +41,7 @@ export default function RegisterScreen() {
     if (result.error) {
       setError(result.error);
     } else {
-      router.replace("/(auth)/onboarding");
+      router.push({ pathname: "/(auth)/onboarding", params: { from: "register" } });
     }
   }
 

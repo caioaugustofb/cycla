@@ -1,75 +1,170 @@
-import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  ActivityIndicator,
-} from "react-native";
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
+import { useEffect, useState } from "react";
+import { View, Text, Image, ActivityIndicator, BackHandler } from "react-native";
+import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { Sparkles, AlertTriangle } from "lucide-react-native";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import Animated, { FadeIn } from "react-native-reanimated";
+import { ChevronLeft, AlertTriangle, Lock } from "lucide-react-native";
+import {
+  MIN_PERIOD_LENGTH,
+  MAX_PERIOD_LENGTH,
+  type Contraceptive,
+  type CycleRegularity,
+  type ReminderPeriod,
+} from "@cycla/core";
 import { apiFetch } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/components/Toast";
 import { PressableScale } from "@/components/PressableScale";
+import { PeriodDatePicker } from "@/components/PeriodDatePicker";
+import { OptionChips, type ChipOption } from "@/components/OptionChips";
+import { StepHeader, DateField, NumberQuestion } from "@/components/onboarding/steps";
+
+const TOTAL_STEPS = 6;
+
+type Regularity = CycleRegularity | "unknown";
+
+const REGULARITY_OPTIONS: ChipOption<Regularity>[] = [
+  { value: "regular", label: "Regular" },
+  { value: "irregular", label: "Irregular" },
+  { value: "unknown", label: "Não sei" },
+];
+
+const CONTRACEPTIVE_OPTIONS: ChipOption<Contraceptive>[] = [
+  { value: "none", label: "Não uso" },
+  { value: "pill", label: "Pílula" },
+  { value: "hormonal_iud", label: "DIU hormonal" },
+  { value: "copper_iud", label: "DIU de cobre" },
+  { value: "implant", label: "Implante" },
+  { value: "injection", label: "Injeção" },
+];
+
+const REMINDER_OPTIONS: ChipOption<ReminderPeriod>[] = [
+  { value: "morning", label: "Manhã (8h)" },
+  { value: "afternoon", label: "Tarde (13h)" },
+  { value: "night", label: "Noite (19h)" },
+];
+
+function toLocalISODate(date: Date) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { finalizeLogin } = useAuth();
-  const [lastPeriodDate, setLastPeriodDate] = useState("");
+  const toast = useToast();
+  const { finalizeLogin, logout } = useAuth();
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const fromRegister = from === "register";
+
+  const [step, setStep] = useState(0);
+  const [lastPeriodDate, setLastPeriodDate] = useState<Date | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [knowsCycle, setKnowsCycle] = useState(false);
   const [cycleLength, setCycleLength] = useState("28");
+  const [knowsPeriod, setKnowsPeriod] = useState(false);
+  const [periodLength, setPeriodLength] = useState("5");
+  const [regularity, setRegularity] = useState<Regularity | null>(null);
+  const [contraceptive, setContraceptive] = useState<Contraceptive | null>(null);
+  const [reminderPeriod, setReminderPeriod] = useState<ReminderPeriod | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [knowsCycle, setKnowsCycle] = useState(false);
 
+  const isLastStep = step === TOTAL_STEPS - 1;
   const cycleLengthNum = parseInt(cycleLength, 10);
   const showOligomenorrheaWarning =
-    !isNaN(cycleLengthNum) && cycleLengthNum > 35 && cycleLengthNum <= 45;
+    knowsCycle && cycleLengthNum > 35 && cycleLengthNum <= 45;
 
-  function formatDateInput(text: string) {
-    const digits = text.replace(/\D/g, "");
-    if (digits.length <= 2) return digits;
-    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      goBack();
+      return true;
+    });
+    return () => sub.remove();
+  }, [step, fromRegister, loading]);
+
+  function validateStep(): string | null {
+    if (step === 0 && !lastPeriodDate) {
+      return "Escolha a data da sua última menstruação.";
+    }
+    if (step === 1 && knowsCycle && (isNaN(cycleLengthNum) || cycleLengthNum < 21 || cycleLengthNum > 45)) {
+      return "A duração do ciclo deve ficar entre 21 e 45 dias.";
+    }
+    const periodNum = parseInt(periodLength, 10);
+    if (
+      step === 2 &&
+      knowsPeriod &&
+      (isNaN(periodNum) || periodNum < MIN_PERIOD_LENGTH || periodNum > MAX_PERIOD_LENGTH)
+    ) {
+      return `A menstruação deve durar entre ${MIN_PERIOD_LENGTH} e ${MAX_PERIOD_LENGTH} dias.`;
+    }
+    return null;
   }
 
-  function parseDate(value: string): string | null {
-    const parts = value.split("/");
-    if (parts.length !== 3) return null;
-    const [day, month, year] = parts;
-    if (!day || !month || !year || year.length !== 4) return null;
-    const d = new Date(`${year}-${month}-${day}`);
-    if (isNaN(d.getTime())) return null;
-    return `${year}-${month}-${day}`;
-  }
-
-  async function handleSubmit() {
+  function goNext() {
+    const message = validateStep();
+    if (message) {
+      setError(message);
+      return;
+    }
     setError("");
+    if (isLastStep) submit(reminderPeriod);
+    else setStep((s) => s + 1);
+  }
 
-    const parsedDate = parseDate(lastPeriodDate);
-    if (!parsedDate) {
-      setError("Informe a data no formato DD/MM/AAAA");
+  function skip() {
+    setError("");
+    if (step === 1) setKnowsCycle(false);
+    if (step === 2) setKnowsPeriod(false);
+    if (step === 3) setRegularity(null);
+    if (step === 4) setContraceptive(null);
+    if (isLastStep) submit(null);
+    else setStep((s) => s + 1);
+  }
+
+  async function goBack() {
+    if (loading) return;
+    setError("");
+    if (step > 0) {
+      setStep((s) => s - 1);
       return;
     }
-
-    const length = parseInt(cycleLength, 10);
-    if (knowsCycle && (isNaN(length) || length < 21 || length > 45)) {
-      setError("Duração do ciclo deve ser entre 21 e 45 dias");
+    if (!fromRegister) {
+      router.back();
       return;
     }
+    setLoading(true);
+    const res = await apiFetch("/api/auth/register", { method: "DELETE" });
+    setLoading(false);
+    if (!res.ok) {
+      toast.error("Não foi possível voltar. Tente novamente.");
+      return;
+    }
+    await logout();
+    router.back();
+  }
 
+  async function submit(reminder: ReminderPeriod | null) {
+    if (!lastPeriodDate) return;
     setLoading(true);
     const res = await apiFetch("/api/onboarding", {
       method: "POST",
       body: JSON.stringify({
-        lastPeriodDate: parsedDate,
-        ...(knowsCycle && { cycleLength: length }),
+        lastPeriodDate: toLocalISODate(lastPeriodDate),
+        ...(knowsCycle && { cycleLength: cycleLengthNum }),
+        ...(knowsPeriod && { periodLength: parseInt(periodLength, 10) }),
+        ...(regularity && regularity !== "unknown" && { cycleRegularity: regularity }),
+        ...(contraceptive && { contraceptive }),
+        ...(reminder && { reminderPeriod: reminder }),
       }),
     });
     setLoading(false);
 
     if (!res.ok) {
-      setError("Erro ao salvar. Tente novamente.");
+      setError("Não foi possível salvar. Tente novamente.");
       return;
     }
 
@@ -77,125 +172,186 @@ export default function OnboardingScreen() {
     router.replace("/(app)/dashboard");
   }
 
-  return (
-    <SafeAreaView className="flex-1 bg-surface">
-      <KeyboardAwareScrollView
-        style={{ flex: 1 }}
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        bottomOffset={20}
-      >
-          <View className="flex-1 justify-center px-6 py-10">
-            <View className="items-center mb-8">
-              <View className="bg-accent-light p-4 rounded-3xl mb-4">
-                <Sparkles size={32} color="#7C6FCD" />
-              </View>
-              <Text className="text-3xl font-bold text-primary">Quase lá!</Text>
-              <Text className="text-base text-muted mt-1 text-center">
-                Vamos configurar seu ciclo
+  function renderStep() {
+    switch (step) {
+      case 0:
+        return (
+          <>
+            <Image
+              source={require("../../assets/icon-foreground.png")}
+              style={{ width: 96, height: 96, alignSelf: "center" }}
+              resizeMode="contain"
+            />
+            <StepHeader
+              title="Quase lá!"
+              subtitle="Algumas perguntas rápidas para o app acompanhar o seu ciclo."
+            />
+            <View className="gap-2">
+              <Text className="text-base font-medium text-foreground">
+                Quando começou sua última menstruação?
+              </Text>
+              <DateField date={lastPeriodDate} onPress={() => setPickerOpen(true)} />
+            </View>
+            <View className="flex-row gap-2 rounded-xl p-3" style={{ backgroundColor: "#F5F0FF" }}>
+              <Lock size={16} color="#7C6FCD" style={{ marginTop: 2, flexShrink: 0 }} />
+              <Text className="text-sm flex-1" style={{ color: "#5B4FA8" }}>
+                Usamos suas respostas apenas para personalizar suas previsões. Só esta data é
+                obrigatória.
               </Text>
             </View>
-
-            <View className="flex flex-col gap-5">
-              <View>
-                <Text className="text-sm font-medium text-foreground mb-1.5">
-                  Quando começou sua última menstruação?
-                </Text>
-                <TextInput
-                  className="bg-white border border-border rounded-xl text-foreground"
-                  style={{ height: 48, paddingHorizontal: 16, fontSize: 14 }}
-                  placeholder="DD/MM/AAAA"
-                  placeholderTextColor="#9ca3af"
-                  value={lastPeriodDate}
-                  onChangeText={(text) => setLastPeriodDate(formatDateInput(text))}
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
-              </View>
-
-              <View>
-                <Text className="text-sm font-medium text-foreground mb-1.5">
-                  Sabe quanto dura o seu ciclo?
-                </Text>
-                <View className="flex-row gap-2">
-                  {[
-                    { value: false, label: "Não sei" },
-                    { value: true, label: "Sei" },
-                  ].map((opt) => {
-                    const active = knowsCycle === opt.value;
-                    return (
-                      <PressableScale
-                        key={opt.label}
-                        onPress={() => setKnowsCycle(opt.value)}
-                        className="px-4 py-2 rounded-xl border"
-                        style={{
-                          backgroundColor: active ? "#7C6FCD" : "#F5F0FF",
-                          borderColor: active ? "#7C6FCD" : "rgba(124,111,205,0.15)",
-                        }}
-                      >
-                        <Text
-                          className="text-sm font-medium"
-                          style={{ color: active ? "#fff" : "#9ca3af" }}
-                        >
-                          {opt.label}
-                        </Text>
-                      </PressableScale>
-                    );
-                  })}
-                </View>
-                {knowsCycle ? (
-                  <View className="mt-3">
-                    <TextInput
-                      className="bg-white border border-border rounded-xl text-foreground w-16"
-                      style={{ height: 40, paddingHorizontal: 8, fontSize: 14, textAlign: "center" }}
-                      placeholder="28"
-                      placeholderTextColor="#9ca3af"
-                      value={cycleLength}
-                      onChangeText={setCycleLength}
-                      keyboardType="number-pad"
-                      maxLength={2}
-                    />
-                    <Text className="text-xs text-muted mt-1.5">
-                      Do primeiro dia da menstruação até o início da próxima, em dias.
-                    </Text>
-
-                    {showOligomenorrheaWarning && (
-                      <View className="flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 mt-2">
-                        <AlertTriangle size={14} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
-                        <Text className="text-xs text-amber-800 flex-1">
-                          Ciclos acima de 35 dias podem indicar{" "}
-                          <Text className="font-semibold">oligomenorreia</Text> - associada a SOP,
-                          hipotireoidismo ou alterações hormonais. Considere consultar um ginecologista.
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                ) : (
-                  <Text className="text-xs text-muted mt-1.5">
-                    Sem problema. O app calcula a duração a partir dos seus registros.
+          </>
+        );
+      case 1:
+        return (
+          <>
+            <StepHeader
+              title="Quanto dura o seu ciclo?"
+              subtitle="Do primeiro dia de uma menstruação até o primeiro dia da próxima."
+            />
+            <NumberQuestion
+              knows={knowsCycle}
+              onKnowsChange={setKnowsCycle}
+              value={cycleLength}
+              onValueChange={setCycleLength}
+              unknownHint="Sem problema. O app calcula a duração a partir dos seus registros."
+            >
+              {showOligomenorrheaWarning && (
+                <View className="flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+                  <AlertTriangle size={16} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
+                  <Text className="text-sm text-amber-800 flex-1">
+                    Ciclos acima de 35 dias podem indicar{" "}
+                    <Text className="font-semibold">oligomenorreia</Text> - associada a SOP,
+                    hipotireoidismo ou alterações hormonais. Considere consultar um ginecologista.
                   </Text>
-                )}
-              </View>
+                </View>
+              )}
+            </NumberQuestion>
+          </>
+        );
+      case 2:
+        return (
+          <>
+            <StepHeader
+              title="Quantos dias dura a sua menstruação?"
+              subtitle="Os dias de sangramento, em média."
+            />
+            <NumberQuestion
+              knows={knowsPeriod}
+              onKnowsChange={setKnowsPeriod}
+              value={periodLength}
+              onValueChange={setPeriodLength}
+              unknownHint="Sem problema. Usamos 5 dias, que é a média."
+            />
+          </>
+        );
+      case 3:
+        return (
+          <>
+            <StepHeader
+              title="Seu ciclo costuma ser regular?"
+              subtitle="Regular é quando a menstruação vem com poucos dias de diferença de um mês para o outro."
+            />
+            <OptionChips options={REGULARITY_OPTIONS} value={regularity} onChange={setRegularity} />
+          </>
+        );
+      case 4:
+        return (
+          <>
+            <StepHeader
+              title="Você usa algum método contraceptivo?"
+              subtitle="Métodos hormonais mudam como as fases funcionam. Saber disso deixa o app mais honesto com você."
+            />
+            <OptionChips
+              options={CONTRACEPTIVE_OPTIONS}
+              value={contraceptive}
+              onChange={setContraceptive}
+            />
+          </>
+        );
+      default:
+        return (
+          <>
+            <StepHeader
+              title="Quando prefere receber os lembretes?"
+              subtitle="Usamos esse horário para os lembretes de treino."
+            />
+            <OptionChips
+              options={REMINDER_OPTIONS}
+              value={reminderPeriod}
+              onChange={setReminderPeriod}
+            />
+          </>
+        );
+    }
+  }
 
-              {error ? (
-                <Text className="text-xs text-red-500 text-center">{error}</Text>
-              ) : null}
+  return (
+    <SafeAreaView className="flex-1 bg-surface">
+      <Stack.Screen options={{ gestureEnabled: false }} />
 
-              <PressableScale
-                className="bg-primary rounded-2xl py-4 items-center mt-2"
-                onPress={handleSubmit}
-                disabled={loading}
-                haptic
-              >
-                {loading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text className="text-white font-semibold text-base">Começar</Text>
-                )}
-              </PressableScale>
-            </View>
-          </View>
+      <View className="flex-row items-center px-4 pt-2 gap-3">
+        <PressableScale onPress={goBack} disabled={loading} className="p-2" hitSlop={8}>
+          <ChevronLeft size={24} color="#7C6FCD" />
+        </PressableScale>
+        <View className="flex-1 flex-row gap-1.5">
+          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
+            <View
+              key={i}
+              className="flex-1 rounded-full"
+              style={{ height: 6, backgroundColor: i <= step ? "#7C6FCD" : "#E5E7EB" }}
+            />
+          ))}
+        </View>
+        <Text className="text-sm text-muted" style={{ fontVariant: ["tabular-nums"] }}>
+          {step + 1}/{TOTAL_STEPS}
+        </Text>
+      </View>
+
+      <KeyboardAwareScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 24, paddingVertical: 24 }}
+        keyboardShouldPersistTaps="handled"
+        bottomOffset={120}
+      >
+        <Animated.View key={step} entering={FadeIn.duration(220)} className="gap-5">
+          {renderStep()}
+        </Animated.View>
       </KeyboardAwareScrollView>
+
+      <KeyboardStickyView offset={{ opened: 0, closed: 0 }}>
+        <View className="px-6 pb-4 pt-2 gap-1 bg-surface">
+          {error ? <Text className="text-sm text-red-500 text-center mb-2">{error}</Text> : null}
+          <PressableScale
+            onPress={goNext}
+            disabled={loading}
+            haptic
+            className="bg-primary rounded-2xl py-4 items-center"
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text className="text-white font-semibold text-base">
+                {isLastStep ? "Começar" : "Continuar"}
+              </Text>
+            )}
+          </PressableScale>
+          {step > 0 && (
+            <PressableScale onPress={skip} disabled={loading} className="py-3 items-center">
+              <Text className="text-base text-muted">Pular</Text>
+            </PressableScale>
+          )}
+        </View>
+      </KeyboardStickyView>
+
+      <PeriodDatePicker
+        visible={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={(date) => {
+          setLastPeriodDate(date);
+          setPickerOpen(false);
+          setError("");
+        }}
+      />
     </SafeAreaView>
   );
 }
