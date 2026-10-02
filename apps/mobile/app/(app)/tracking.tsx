@@ -1,11 +1,10 @@
 import { useState, useCallback, useRef } from "react";
 import {
   View,
-  Text,
   ScrollView,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -549,10 +548,8 @@ export default function TrackingScreen() {
         {/* Header */}
         <View className="flex-row items-center justify-between">
           <View>
-            <Text className="text-muted text-base">Acompanhamento</Text>
-            <Text className="text-2xl font-bold text-foreground">
-              Meu ciclo
-            </Text>
+            <Text className="text-title font-serif text-primary">Meu ciclo</Text>
+            <Text className="text-base text-muted mt-1">Acompanhamento</Text>
           </View>
           <PressableScale
             className="bg-primary rounded-2xl px-4 py-2.5 flex-row items-center gap-2"

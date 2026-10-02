@@ -1,4 +1,5 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { PressableScale } from "@/components/PressableScale";
 
 export type ChipOption<T> = { value: T; label: string };

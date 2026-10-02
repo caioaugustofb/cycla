@@ -7,7 +7,8 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { View, Text } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeInUp, FadeOutUp } from "react-native-reanimated";
 import { Check, AlertCircle, Info } from "lucide-react-native";

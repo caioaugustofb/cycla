@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
-import { View, Text, TextInput } from "react-native";
+import { View } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { CalendarDays } from "lucide-react-native";
 import { PressableScale } from "@/components/PressableScale";
 import { OptionChips, type ChipOption } from "@/components/OptionChips";
@@ -12,7 +13,7 @@ const KNOWS_OPTIONS: ChipOption<boolean>[] = [
 export function StepHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
     <View className="gap-2">
-      <Text className="text-2xl font-bold text-foreground">{title}</Text>
+      <Text className="text-title font-serif text-foreground">{title}</Text>
       <Text className="text-base text-muted">{subtitle}</Text>
     </View>
   );

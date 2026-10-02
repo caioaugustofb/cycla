@@ -9,6 +9,12 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      fontFamily: {
+        serif: ["GildaDisplay"],
+      },
+      fontSize: {
+        title: ["28px", { lineHeight: "34px" }],
+      },
       colors: {
         // Marca
         primary: "#7C6FCD",

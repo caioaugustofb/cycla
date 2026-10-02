@@ -6,6 +6,8 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import * as SplashScreen from "expo-splash-screen";
+import { useFonts } from "expo-font";
+import { FONT_ASSETS } from "@/lib/fonts";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AnimatedSplash } from "@/components/AnimatedSplash";
 import { GreetingScreen } from "@/components/GreetingScreen";
@@ -89,6 +91,11 @@ function RootNavigation() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSETS);
+
+  // A splash nativa segue visível até aqui; se a fonte falhar, abre com a do sistema.
+  if (!fontsLoaded && !fontError) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

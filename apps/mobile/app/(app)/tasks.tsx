@@ -1,11 +1,10 @@
 import { useState, useCallback, useRef } from "react";
 import {
   View,
-  Text,
   ScrollView,
-  TextInput,
   ActivityIndicator,
 } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect } from "expo-router";
@@ -161,7 +160,7 @@ export default function TasksScreen() {
     <SafeAreaView className="flex-1 bg-surface">
       <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 20 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
         <View>
-          <Text className="text-2xl font-bold text-primary">Tarefas do dia</Text>
+          <Text className="text-title font-serif text-primary">Tarefas do dia</Text>
           {cycleStatus && (
             <Text className="text-base text-muted mt-1">
               Fase atual:{" "}

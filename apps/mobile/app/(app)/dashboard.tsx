@@ -1,11 +1,11 @@
 import { useState, useCallback, useRef } from "react";
 import {
   View,
-  Text,
   Image,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { CalendarDays, Zap, Timer, Check, Sparkles, Info, X } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
@@ -17,7 +17,6 @@ import Animated, {
   Easing,
 } from "react-native-reanimated";
 import { apiFetch } from "@/lib/api";
-import { useAuth } from "@/context/AuthContext";
 import { CycleStatus, CyclePhase } from "@cycla/core";
 import { PressableScale } from "@/components/PressableScale";
 import { useToast } from "@/components/Toast";
@@ -75,7 +74,6 @@ type DailyLog = {
 };
 
 export default function DashboardScreen() {
-  const { user } = useAuth();
   const toast = useToast();
   const router = useRouter();
   const [animKey, setAnimKey] = useState(0);
@@ -213,7 +211,7 @@ export default function DashboardScreen() {
         <View className="bg-accent-light p-5 rounded-3xl mb-5">
           <Sparkles size={36} color="#7C6FCD" />
         </View>
-        <Text className="text-xl font-bold text-primary text-center mb-2">
+        <Text className="text-xl font-serif text-primary text-center mb-2">
           Configure seu ciclo
         </Text>
         <Text className="text-base text-muted text-center mb-6">
@@ -233,10 +231,6 @@ export default function DashboardScreen() {
     );
   }
 
-  const firstName = user?.name?.split(" ")[0] ?? "";
-  const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
   const activePhase: CyclePhase = status?.phase ?? "menstrual";
   const accent = PHASE_ACCENT[activePhase];
   const phaseImage = PHASE_IMAGES[activePhase];
@@ -258,14 +252,7 @@ export default function DashboardScreen() {
         className="flex-1"
         contentContainerStyle={{ padding: 24, gap: 16 }}
       >
-        <View>
-          <Text className="text-primary font-semibold text-base">
-            {greeting}, {firstName}
-          </Text>
-          <Text className="text-2xl font-bold text-foreground">
-            Seu ciclo hoje
-          </Text>
-        </View>
+        <Text className="text-title font-serif text-foreground">Seu ciclo hoje</Text>
 
         {status && !status.isLate && (
           <Animated.View
@@ -294,7 +281,7 @@ export default function DashboardScreen() {
             <View>
               <View className="flex-row items-center gap-2">
                 <Text
-                  className="text-xl font-bold"
+                  className="text-2xl font-serif"
                   style={{ color: accent.color }}
                 >
                   Fase {status.phaseInfo.name}
@@ -397,7 +384,7 @@ export default function DashboardScreen() {
             </View>
 
             <View>
-              <Text className="text-xl font-bold" style={{ color: "#B4801A" }}>
+              <Text className="text-2xl font-serif" style={{ color: "#B4801A" }}>
                 {status.daysLate === 0
                   ? "Menstruação esperada hoje"
                   : status.cycleRegularity === "irregular"

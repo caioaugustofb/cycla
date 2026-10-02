@@ -1,11 +1,10 @@
 import { useState } from "react";
 import {
   View,
-  Text,
-  TextInput,
   ActivityIndicator,
   Image,
 } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";

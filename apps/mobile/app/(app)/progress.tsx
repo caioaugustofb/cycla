@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
-import { View, Text, ScrollView, ActivityIndicator } from "react-native";
+import { View, ScrollView, ActivityIndicator } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useRouter } from "expo-router";
 import { Smile, Zap, Activity, Repeat, ChevronRight } from "lucide-react-native";
@@ -216,7 +217,7 @@ export default function ProgressScreen() {
         contentContainerStyle={{ padding: 24, gap: 20 }}
       >
         <View>
-          <Text className="text-2xl font-bold text-primary">Progresso</Text>
+          <Text className="text-title font-serif text-primary">Progresso</Text>
           <Text className="text-base text-muted mt-1">Últimos 30 dias</Text>
         </View>
 

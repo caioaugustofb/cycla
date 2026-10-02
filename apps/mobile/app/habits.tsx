@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, TextInput, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import { View, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams } from "expo-router";
@@ -120,7 +121,7 @@ export default function HabitsScreen() {
             <ChevronLeft size={24} color="#111827" />
           </PressableScale>
           <View>
-            <Text className="text-2xl font-bold text-primary">Hábitos</Text>
+            <Text className="text-title font-serif text-primary">Hábitos</Text>
             <Text className="text-base text-muted">{locked ? "Hábitos da sua fase atual" : "Mapeie hábitos para cada fase"}</Text>
           </View>
         </View>

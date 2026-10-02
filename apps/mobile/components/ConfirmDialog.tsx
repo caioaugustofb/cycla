@@ -1,5 +1,6 @@
 import { useEffect } from "react";
-import { View, Text, Modal, Pressable, useWindowDimensions } from "react-native";
+import { View, Modal, Pressable, useWindowDimensions } from "react-native";
+import { Text } from "@/components/ui/Text";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,

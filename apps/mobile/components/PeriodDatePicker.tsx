@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import { View, Text, Modal, Pressable, StyleSheet } from "react-native";
+import { View, Modal, Pressable, StyleSheet } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from "react-native-reanimated";
 import { ChevronLeft, ChevronRight } from "lucide-react-native";

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -164,7 +165,7 @@ export default function ProfileScreen() {
             <ChevronLeft size={24} color="#111827" />
           </PressableScale>
           <View className="flex-1">
-            <Text className="text-2xl font-bold text-primary">Sobre você</Text>
+            <Text className="text-title font-serif text-primary">Sobre você</Text>
             <Text className="text-base text-muted">Usado para personalizar fases e lembretes</Text>
           </View>
         </View>

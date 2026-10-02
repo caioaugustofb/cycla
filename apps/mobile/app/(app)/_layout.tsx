@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { Home, CalendarDays, CheckSquare, TrendingUp, Settings } from "lucide-react-native";
+import { resolveFontFamily } from "@/lib/fonts";
 
 export default function AppLayout() {
   return (
@@ -8,6 +9,7 @@ export default function AppLayout() {
         headerShown: false,
         tabBarActiveTintColor: "#7C6FCD",
         tabBarInactiveTintColor: "#9ca3af",
+        tabBarLabelStyle: { fontFamily: resolveFontFamily(600) },
         tabBarStyle: {
           backgroundColor: "#ffffff",
           borderTopColor: "rgba(124,111,205,0.15)",

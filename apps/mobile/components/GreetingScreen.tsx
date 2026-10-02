@@ -9,6 +9,7 @@ import Animated, {
   runOnJS
 } from "react-native-reanimated";
 import { LinearGradient } from "expo-linear-gradient";
+import { resolveFontFamily } from "@/lib/fonts";
 
 const LETTER_STAGGER = 55;
 const LETTER_DURATION = 320;
@@ -80,6 +81,6 @@ const styles = StyleSheet.create({
   wrapper: { zIndex: 5 },
   center: { flex: 1, alignItems: "center", justifyContent: "center" },
   row: { flexDirection: "row" },
-  greetingText: { fontSize: 24, fontWeight: "700", color: "#111827" },
-  nameText: { fontSize: 34, fontWeight: "600", color: "#7C6FCD", marginTop: 4 },
+  greetingText: { fontSize: 24, fontFamily: resolveFontFamily(700, true), color: "#111827" },
+  nameText: { fontSize: 34, fontFamily: resolveFontFamily(600, true), color: "#7C6FCD", marginTop: 4 },
 });

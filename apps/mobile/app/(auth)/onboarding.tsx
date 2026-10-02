@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { View, Text, Image, ActivityIndicator, BackHandler } from "react-native";
+import { View, Image, ActivityIndicator, BackHandler } from "react-native";
+import { Text } from "@/components/ui/Text";
 import { KeyboardAwareScrollView, KeyboardStickyView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";

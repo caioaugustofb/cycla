@@ -1,14 +1,13 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import {
   View,
-  Text,
-  TextInput,
   ScrollView,
   ActivityIndicator,
   Alert,
   Switch,
   Linking,
 } from "react-native";
+import { Text, TextInput } from "@/components/ui/Text";
 import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { 
@@ -214,7 +213,7 @@ export default function SettingsScreen() {
     <SafeAreaView className="flex-1 bg-surface">
       <KeyboardAwareScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 24, gap: 20 }} bottomOffset={20} keyboardShouldPersistTaps="handled">
         <View>
-          <Text className="text-2xl font-bold text-primary">Configurações</Text>
+          <Text className="text-title font-serif text-primary">Configurações</Text>
           <Text className="text-base text-muted mt-1">Gerencie seu perfil e ciclo</Text>
         </View>
 
