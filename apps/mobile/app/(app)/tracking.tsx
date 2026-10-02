@@ -89,7 +89,7 @@ function getPhaseForDate(
   d.setHours(0, 0, 0, 0);
   const diff = Math.floor((d.getTime() - start.getTime()) / msPerDay);
   if (diff < 0) return null;
-  return phaseForCycleDay((diff % cycleLength) + 1, periodLength);
+  return phaseForCycleDay((diff % cycleLength) + 1, periodLength, cycleLength);
 }
 
 function isToday(date: Date): boolean {
@@ -235,15 +235,17 @@ function MonthlyCalendar({
   month,
   cycles,
   periodLength,
+  cycleLength,
 }: {
   year: number;
   month: number;
   cycles: Cycle[];
   periodLength: number;
+  cycleLength: number;
 }) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
-  const cycleLength = latest?.cycleLength ?? 28;
+
 
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
@@ -319,14 +321,16 @@ function WeeklyCalendar({
   weekStart,
   cycles,
   periodLength,
+  cycleLength,
 }: {
   weekStart: Date;
   cycles: Cycle[];
   periodLength: number;
+  cycleLength: number;
 }) {
   const latest = cycles[0];
   const lastPeriodDate = latest ? new Date(latest.startDate) : null;
-  const cycleLength = latest?.cycleLength ?? 28;
+
 
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart);
@@ -476,6 +480,7 @@ export default function TrackingScreen() {
   }
 
   const avgCycleLength = cycleLengthStats(cycles.map((c) => c.startDate)).average;
+  const calendarCycleLength = avgCycleLength ?? cycles[0]?.cycleLength ?? 28;
 
   async function handleRegister() {
     setError("");
@@ -652,9 +657,15 @@ export default function TrackingScreen() {
               month={currentDate.getMonth()}
               cycles={cycles}
               periodLength={periodLength}
+              cycleLength={calendarCycleLength}
             />
           ) : (
-            <WeeklyCalendar weekStart={weekStart} cycles={cycles} periodLength={periodLength} />
+            <WeeklyCalendar
+              weekStart={weekStart}
+              cycles={cycles}
+              periodLength={periodLength}
+              cycleLength={calendarCycleLength}
+            />
           )}
 
           {/* Legend */}

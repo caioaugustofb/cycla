@@ -47,21 +47,37 @@ const PHASE_INFO: Record<CyclePhase, { name: string; energy: string; description
   },
 };
 
+const LUTEAL_LENGTH = 14;
+
+interface PhaseBounds {
+  menstrualEnd: number;
+  follicularEnd: number;
+  ovulatoryEnd: number;
+  cycleEnd: number;
+}
+
+// A fase lútea varia pouco (~14 dias); quem absorve a diferença entre ciclos é a folicular.
+function phaseBounds(cycleLength: number, periodLength: number): PhaseBounds {
+  const ovulationDay = cycleLength - LUTEAL_LENGTH;
+  const ovulatoryStart = Math.max(ovulationDay - 1, periodLength + 1);
+  return {
+    menstrualEnd: periodLength,
+    follicularEnd: ovulatoryStart - 1,
+    ovulatoryEnd: Math.max(ovulationDay + 2, ovulatoryStart),
+    cycleEnd: cycleLength,
+  };
+}
+
 export function phaseForCycleDay(
   cycleDay: number,
   periodLength: number = DEFAULT_PERIOD_LENGTH,
+  cycleLength: number = 28,
 ): CyclePhase {
-  if (cycleDay <= periodLength) return "menstrual";
-  if (cycleDay <= 12) return "follicular";
-  if (cycleDay <= 16) return "ovulatory";
+  const b = phaseBounds(cycleLength, periodLength);
+  if (cycleDay <= b.menstrualEnd) return "menstrual";
+  if (cycleDay <= b.follicularEnd) return "follicular";
+  if (cycleDay <= b.ovulatoryEnd) return "ovulatory";
   return "luteal";
-}
-
-function getPhaseEndDay(phase: CyclePhase, cycleLength: number, periodLength: number): number {
-  if (phase === "menstrual") return periodLength;
-  if (phase === "follicular") return 12;
-  if (phase === "ovulatory") return 16;
-  return cycleLength;
 }
 
 export function calculateCycleStatus(
@@ -96,7 +112,7 @@ export function calculateCycleStatus(
     return {
       currentDay,
       phase: "luteal",
-      phaseDay: currentDay - 16,
+      phaseDay: currentDay - phaseBounds(cycleLength, periodLength).ovulatoryEnd,
       daysLeftInPhase: 0,
       nextPeriodDate,
       isLate: true,
@@ -115,18 +131,16 @@ export function calculateCycleStatus(
     };
   }
 
-  const phase = phaseForCycleDay(currentDay, periodLength);
-  const phaseEndDay = getPhaseEndDay(phase, cycleLength, periodLength);
-  const phaseDay =
-    currentDay -
-    (phase === "menstrual"
-      ? 0
-      : phase === "follicular"
-        ? periodLength
-        : phase === "ovulatory"
-          ? 12
-          : 16);
-  const daysLeftInPhase = phaseEndDay - currentDay;
+  const phase = phaseForCycleDay(currentDay, periodLength, cycleLength);
+  const b = phaseBounds(cycleLength, periodLength);
+  const [phaseStart, phaseEnd] = {
+    menstrual: [1, b.menstrualEnd],
+    follicular: [b.menstrualEnd + 1, b.follicularEnd],
+    ovulatory: [b.follicularEnd + 1, b.ovulatoryEnd],
+    luteal: [b.ovulatoryEnd + 1, b.cycleEnd],
+  }[phase];
+  const phaseDay = currentDay - phaseStart + 1;
+  const daysLeftInPhase = phaseEnd - currentDay;
 
   return {
     currentDay,
