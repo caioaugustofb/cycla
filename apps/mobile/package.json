@@ -4,10 +4,13 @@
   "main": "expo-router/entry",
   "dependencies": {
     "@cycla/core": "*",
+    "@expo-google-fonts/gilda-display": "^0.4.2",
+    "@expo-google-fonts/nunito": "^0.4.2",
     "@react-native-async-storage/async-storage": "^3.1.1",
     "babel-preset-expo": "~57.0.0",
     "expo": "~57.0.2",
     "expo-constants": "~57.0.3",
+    "expo-font": "~57.0.4",
     "expo-haptics": "~57.0.1",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.1",
