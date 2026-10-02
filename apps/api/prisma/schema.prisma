@@ -3,13 +3,17 @@ generator client {
 }
 
 model User {
-  id           String     @id @default(cuid())
-  name         String
-  email        String     @unique
-  passwordHash String
-  cycleLength  Int        @default(28)
-  role         String     @default("user")
-  createdAt    DateTime   @default(now())
+  id              String     @id @default(cuid())
+  name            String
+  email           String     @unique
+  passwordHash    String
+  cycleLength     Int        @default(28)
+  periodLength    Int?
+  cycleRegularity String?
+  contraceptive   String?
+  reminderPeriod  String?
+  role            String     @default("user")
+  createdAt       DateTime   @default(now())
 
   cycles    Cycle[]
   dailyLogs DailyLog[]
