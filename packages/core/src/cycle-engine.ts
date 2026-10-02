@@ -131,13 +131,17 @@ export function calculateCycleStatus(
 const MIN_REASONABLE_CYCLE = 15;
 const MAX_REASONABLE_CYCLE = 60;
 const MAX_CYCLES_CONSIDERED = 6;
-const MIN_SAMPLES = 2;
+export const MIN_CYCLE_SAMPLES = 3;
 
-//intervalos fora da faixa razoável indicam registro perdido, não um ciclo real
-export function averageCycleLength(
-  startDates: (Date | string)[],
-  fallback: number,
-): number {
+export interface CycleLengthStats {
+  samples: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+}
+
+// Intervalos fora da faixa razoável indicam registro perdido, não um ciclo real.
+export function cycleLengthStats(startDates: (Date | string)[]): CycleLengthStats {
   const days = startDates
     .map((d) => {
       const x = new Date(d);
@@ -146,11 +150,23 @@ export function averageCycleLength(
     .sort((a, b) => b - a);
 
   const gaps: number[] = [];
-  for (let i = 0; i < days.length - 1 && gaps.length < MAX_CYCLES_CONSIDERED; i++) {
+  for (let i=0; i < days.length - 1 && gaps.length < MAX_CYCLES_CONSIDERED; i++) {
     const gap = Math.round((days[i] - days[i + 1]) / 86400000);
     if (gap >= MIN_REASONABLE_CYCLE && gap <= MAX_REASONABLE_CYCLE) gaps.push(gap);
   }
 
-  if (gaps.length < MIN_SAMPLES) return fallback;
-  return Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length);
+  if (gaps.length < MIN_CYCLE_SAMPLES) {
+    return { samples: gaps.length, average: null, min: null, max: null };
+  }
+
+  return {
+    samples: gaps.length,
+    average: Math.round(gaps.reduce((a, b) => a + b, 0) / gaps.length),
+    min: Math.min(...gaps),
+    max: Math.max(...gaps),
+  };
+}
+
+export function averageCycleLength(startDates: (Date | string)[], fallback: number): number {
+  return cycleLengthStats(startDates).average ?? fallback;
 }

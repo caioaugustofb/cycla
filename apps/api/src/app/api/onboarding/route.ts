@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod/v4";
+import {
+  CONTRACEPTIVES,
+  CYCLE_REGULARITIES,
+  REMINDER_PERIODS,
+  MIN_PERIOD_LENGTH,
+  MAX_PERIOD_LENGTH,
+} from "@cycla/core";
 import { prisma } from "@/src/lib/db";
 import { getUser } from "@/src/lib/get-user";
 
 const onboardingSchema = z.object({
   lastPeriodDate: z.string().min(1),
-  cycleLength: z.number().min(21).max(45),
+  cycleLength: z.number().int().min(21).max(45).optional(),
+  periodLength: z.number().int().min(MIN_PERIOD_LENGTH).max(MAX_PERIOD_LENGTH).optional(),
+  cycleRegularity: z.enum(CYCLE_REGULARITIES).optional(),
+  contraceptive: z.enum(CONTRACEPTIVES).optional(),
+  reminderPeriod: z.enum(REMINDER_PERIODS).optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -22,18 +33,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
   }
 
-  const { lastPeriodDate, cycleLength } = parsed.data;
+  const { lastPeriodDate, cycleLength, ...profile } = parsed.data;
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { cycleLength },
+    data: { ...profile, ...(cycleLength && { cycleLength }) },
   });
 
   await prisma.cycle.create({
     data: {
       userId: user.id,
       startDate: new Date(lastPeriodDate),
-      cycleLength,
+      cycleLength: cycleLength ?? null,
     },
   });
 

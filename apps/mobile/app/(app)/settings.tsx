@@ -40,7 +40,16 @@ import {
   disablePeriodReminders,
 } from "@/lib/notifications";
 
-type UserData = { name: string; email: string; cycleLength: number };
+type UserData = { name: string; email: string };
+
+type CycleStats = {
+  samples: number;
+  required: number;
+  average: number | null;
+  min: number | null;
+  max: number | null;
+  estimated: number;
+};
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
@@ -57,7 +66,7 @@ export default function SettingsScreen() {
     getPeriodRemindersEnabled().then(setPeriodRemindersOn);
   }, []);
 
-  const [cycleLength, setCycleLength] = useState("28");
+  const [cycleStats, setCycleStats] = useState<CycleStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -73,18 +82,26 @@ export default function SettingsScreen() {
     }, [])
   );
 
-  const cycleLengthNum = parseInt(cycleLength, 10);
-  const showWarning = !isNaN(cycleLengthNum) && cycleLengthNum > 35 && cycleLengthNum <= 45;
+  const showWarning = (cycleStats?.average ?? 0) > 35;
 
   useEffect(() => {
     async function load() {
-      const res = await apiFetch("/api/settings");
-      if (res.ok) {
-        const user: UserData = await res.json();
+      const [settingsRes, statusRes] = await Promise.all([
+        apiFetch("/api/settings"),
+        apiFetch("/api/cycle/status"),
+      ]);
+
+      if (settingsRes.ok) {
+        const user: UserData = await settingsRes.json();
         setData(user);
         setName(user.name);
-        setCycleLength(String(user.cycleLength));
       }
+
+      if (statusRes.ok) {
+        const status = await statusRes.json();
+        setCycleStats(status.cycleStats);
+      }
+
       setLoading(false);
     }
     load();
@@ -92,29 +109,19 @@ export default function SettingsScreen() {
 
   async function handleSave() {
     if (!name.trim()) {
-      toast.error("Informe seu nome.");
-      return;
-    }
-
-    const length = parseInt(cycleLength, 10);
-    if (isNaN(length)) {
-      toast.error("Informe a duração do ciclo em dias.");
-      return;
-    }
-    if (!__DEV__ && (length < 21 || length > 45)) {
-      toast.error("A duração do ciclo deve ficar entre 21 e 45 dias.");
+      toast.error("Informe seu nome");
       return;
     }
 
     setSaving(true);
     const res = await apiFetch("/api/settings", {
       method: "PATCH",
-      body: JSON.stringify({ name, cycleLength: length }),
+      body: JSON.stringify({ name }),
     });
     if (res.ok) {
-      setData((prev) => (prev ? { ...prev, name, cycleLength: length } : prev));
+      setData((prev) => (prev ? { ...prev, name } : prev));
       setSaved(true);
-      toast.success("Alterações salvas.");
+      toast.success("Alterações salvas");
       setTimeout(() => setSaved(false), 2500);
     } else {
       toast.error("Não foi possível salvar. Tente novamente.");
@@ -255,30 +262,47 @@ export default function SettingsScreen() {
           </View>
 
           <View className="gap-1.5">
-            <Text className="text-base font-medium text-foreground">
-              Duração do ciclo (dias)
-            </Text>
-            <TextInput
-              className="bg-surface border border-border rounded-xl text-foreground w-16"
-              style={{ height: 40, paddingHorizontal: 8, fontSize: 16, textAlign: "center" }}
-              value={cycleLength}
-              onChangeText={setCycleLength}
-              onBlur={() => {
-                if (cycleLength.trim() === "") setCycleLength(String(data?.cycleLength ?? 28));
-              }}
-              keyboardType="number-pad"
-              maxLength={2}
-            />
-            <Text className="text-sm text-muted">
-              Do 1º dia da menstruação até o início da próxima. Média: 28 dias.
-            </Text>
+            <Text className="text-base font-medium text-foreground">Duração do ciclo</Text>
+
+            {cycleStats?.average != null ? (
+              <>
+                <Text
+                  className="text-2xl font-bold text-primary"
+                  style={{ fontVariant: ["tabular-nums"] }}
+                >
+                  {cycleStats.average} dias
+                </Text>
+                <Text className="text-sm text-muted">
+                  Média dos últimos {cycleStats.samples} ciclos
+                  {cycleStats.min !== cycleStats.max
+                    ? ` - entre ${cycleStats.min} e ${cycleStats.max} dias`
+                    : ""}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text
+                  className="text-2xl font-bold text-foreground"
+                  style={{ fontVariant: ["tabular-nums"] }}
+                >
+                  {cycleStats?.estimated ?? 28} dias
+                </Text>
+                <Text className="text-sm text-muted">
+                  Estimativa inicial - {cycleStats?.samples ?? 0} de {cycleStats?.required ?? 3}{" "}
+                  ciclos completos
+                </Text>
+                <Text className="text-sm text-muted">
+                  A média real aparece após {cycleStats?.required ?? 3} ciclos.
+                </Text>
+              </>
+            )}
 
             {showWarning && (
               <View className="flex-row gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 mt-1">
                 <AlertTriangle size={16} color="#f59e0b" style={{ marginTop: 2, flexShrink: 0 }} />
                 <Text className="text-sm text-amber-800 flex-1">
                   Ciclos acima de 35 dias podem indicar{" "}
-                  <Text className="font-semibold">oligomenorreia</Text> — associada a SOP,
+                  <Text className="font-semibold">oligomenorreia</Text> - associada a SOP,
                   hipotireoidismo ou alterações hormonais. Considere consultar um ginecologista.
                 </Text>
               </View>

@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/src/lib/db";
 import { z } from "zod/v4";
+import {
+  CONTRACEPTIVES,
+  CYCLE_REGULARITIES,
+  REMINDER_PERIODS,
+  MIN_PERIOD_LENGTH,
+  MAX_PERIOD_LENGTH,
+} from "@cycla/core";
 import { getUser } from "@/src/lib/get-user";
+
+const userSelect = {
+  name: true,
+  email: true,
+  periodLength: true,
+  cycleRegularity: true,
+  contraceptive: true,
+  reminderPeriod: true,
+} as const;
 
 export async function GET() {
   const user = await getUser();
@@ -11,19 +27,18 @@ export async function GET() {
 
   const userData = await prisma.user.findUnique({
     where: { id: user.id },
-    select: { name: true, email: true, cycleLength: true },
+    select: userSelect,
   });
 
   return NextResponse.json(userData);
 }
 
-const isDev = process.env.NODE_ENV === "development";
-
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
-  cycleLength: isDev
-    ? z.number().int().min(1).max(400).optional()
-    : z.number().int().min(21).max(45).optional(),
+  periodLength: z.number().int().min(MIN_PERIOD_LENGTH).max(MAX_PERIOD_LENGTH).nullable().optional(),
+  cycleRegularity: z.enum(CYCLE_REGULARITIES).nullable().optional(),
+  contraceptive: z.enum(CONTRACEPTIVES).nullable().optional(),
+  reminderPeriod: z.enum(REMINDER_PERIODS).nullable().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -41,7 +56,7 @@ export async function PATCH(req: NextRequest) {
   const userData = await prisma.user.update({
     where: { id: user.id },
     data: parsed.data,
-    select: { name: true, email: true, cycleLength: true },
+    select: userSelect,
   });
 
   return NextResponse.json(userData);
