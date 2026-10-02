@@ -19,6 +19,7 @@ import {
   LogOut,
   Repeat,
   ChevronRight,
+  UserCog,
   Bell,
  } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -324,8 +325,33 @@ export default function SettingsScreen() {
         </Animated.View>
 
         <Animated.View
-          key={`notif-${animKey}`}
+          key={`profile-${animKey}`}
           entering={FadeInDown.delay(100).duration(250)}
+        >
+          <PressableScale
+            onPress={() => router.push("/profile")}
+            className="bg-white rounded-2xl p-4 border border-border"
+          >
+            <View className="flex-row items-center">
+              <View className="bg-accent-light rounded-xl p-2.5">
+                <UserCog size={20} color="#7C6FCD" />
+              </View>
+
+              <View className="flex-1 ml-3">
+                <Text className="text-lg font-semibold text-foreground">Sobre você</Text>
+                <Text className="text-sm text-muted mt-0.5">
+                  Menstruação, contraceptivo e lembretes
+                </Text>
+              </View>
+
+              <ChevronRight size={20} color="#9CA3AF" />
+            </View>
+          </PressableScale>
+        </Animated.View>
+
+        <Animated.View
+          key={`notif-${animKey}`}
+          entering={FadeInDown.delay(150).duration(250)}
           className="bg-white rounded-2xl p-4 border border-border gap-4"
         >
           <View className="flex-row items-center gap-2">
@@ -372,7 +398,7 @@ export default function SettingsScreen() {
 
         <Animated.View
           key={`habits-${animKey}`}
-          entering={FadeInDown.delay(150).duration(250)}
+          entering={FadeInDown.delay(200).duration(250)}
         >
           <PressableScale
             onPress={() => router.push("/habits")}
@@ -399,7 +425,7 @@ export default function SettingsScreen() {
 
         <Animated.View
           key={`save-${animKey}`}
-          entering={FadeInDown.delay(200).duration(250)}
+          entering={FadeInDown.delay(250).duration(250)}
         >
           <PressableScale
             onPress={handleSave}
@@ -425,7 +451,7 @@ export default function SettingsScreen() {
 
         <Animated.View
           key={`sair-${animKey}`}
-          entering={FadeInDown.delay(250).duration(250)}
+          entering={FadeInDown.delay(300).duration(250)}
         >
           <PressableScale
             onPress={handleLogout}

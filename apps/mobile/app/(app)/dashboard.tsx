@@ -7,7 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CalendarDays, Zap, Timer, Check, Sparkles, Info } from "lucide-react-native";
+import { CalendarDays, Zap, Timer, Check, Sparkles, Info, X } from "lucide-react-native";
 import { useRouter, useFocusEffect } from "expo-router";
 import Animated, {
   FadeInDown,
@@ -22,6 +22,7 @@ import { CycleStatus, CyclePhase } from "@cycla/core";
 import { PressableScale } from "@/components/PressableScale";
 import { useToast } from "@/components/Toast";
 import { PeriodDatePicker } from "@/components/PeriodDatePicker";
+import { isHormonalNoteDismissed, dismissHormonalNote } from "@/lib/hints";
 
 const PHASE_IMAGES: Record<CyclePhase, ReturnType<typeof require>> = {
   menstrual: require("../../assets/phases/fase-menstrual.png"),
@@ -100,6 +101,8 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [noOnboarding, setNoOnboarding] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [hormonalNoteDismissed, setHormonalNoteDismissed] = useState(false);
+  const [hormonalNoteOpen, setHormonalNoteOpen] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
   // Colapso sincronizado: progress (0=fechado, 1=aberto) dirige altura E opacidade juntas.
   const collapseProgress = useSharedValue(1);
@@ -129,6 +132,7 @@ export default function DashboardScreen() {
     }
 
     if (cycleRes.ok) setStatus(await cycleRes.json());
+    setHormonalNoteDismissed(await isHormonalNoteDismissed());
     if (logRes.ok) {
       const data = await logRes.json();
       if (data) {
@@ -288,27 +292,52 @@ export default function DashboardScreen() {
               </View>
             </View>
             <View>
-              <Text
-                className="text-xl font-bold"
-                style={{ color: accent.color }}
-              >
-                Fase {status.phaseInfo.name}
-              </Text>
+              <View className="flex-row items-center gap-2">
+                <Text
+                  className="text-xl font-bold"
+                  style={{ color: accent.color }}
+                >
+                  Fase {status.phaseInfo.name}
+                </Text>
+                {status.usesHormonalContraceptive && hormonalNoteDismissed && (
+                  <PressableScale
+                    onPress={() => setHormonalNoteOpen((open) => !open)}
+                    hitSlop={10}
+                  >
+                    <Info size={18} color="#9CA3AF" />
+                  </PressableScale>
+                )}
+              </View>
               <Text className="text-base text-foreground-secondary mt-1">
                 {status.phaseInfo.description}
               </Text>
             </View>
-            {status.usesHormonalContraceptive && (
-              <View
-                className="flex-row gap-2 rounded-xl p-3"
-                style={{ backgroundColor: accent.tint }}
+            {status.usesHormonalContraceptive && (!hormonalNoteDismissed || hormonalNoteOpen) && (
+              <Animated.View
+                entering={FadeInDown.duration(200)}
+                className="flex-row gap-2.5 rounded-xl p-3 border border-border"
+                style={{ backgroundColor: "#F9FAFB" }}
               >
-                <Info size={16} color={accent.color} style={{ marginTop: 2, flexShrink: 0 }} />
-                <Text className="text-sm flex-1" style={{ color: accent.color }}>
-                  Com anticoncepcional hormonal, seu corpo não passa pelas fases naturais da mesma
-                  forma. Use as fases como referência, não como regra.
-                </Text>
-              </View>
+                <Info size={16} color="#6B7280" style={{ marginTop: 2, flexShrink: 0 }} />
+                <View className="flex-1 gap-0.5">
+                  <Text className="text-sm font-medium text-foreground">Sobre o seu método</Text>
+                  <Text className="text-sm text-foreground-secondary">
+                    Com anticoncepcional hormonal, seu corpo não passa pelas fases naturais da
+                    mesma forma. Use as fases como referência, não como regra.
+                  </Text>
+                </View>
+                <PressableScale
+                  onPress={async () => {
+                    await dismissHormonalNote();
+                    setHormonalNoteDismissed(true);
+                    setHormonalNoteOpen(false);
+                  }}
+                  hitSlop={10}
+                  className="self-start"
+                >
+                  <X size={16} color="#9CA3AF" />
+                </PressableScale>
+              </Animated.View>
             )}
             <View className="flex-row gap-3 mt-1">
               <View

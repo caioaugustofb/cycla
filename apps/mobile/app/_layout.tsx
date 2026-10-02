@@ -52,7 +52,7 @@ function RootNavigation() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = inAuthGroup && segments[1] === "onboarding";
-    const inAppGroup = segments[0] === "(app)" || segments[0] === "habits";
+    const inAppGroup = ["(app)", "habits", "profile"].includes(segments[0]);
 
     if (!user && inAppGroup) {
       router.replace("/");
