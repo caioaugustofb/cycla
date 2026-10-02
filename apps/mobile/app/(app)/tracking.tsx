@@ -531,14 +531,14 @@ export default function TrackingScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface items-center justify-center">
+      <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface items-center justify-center">
         <ActivityIndicator color="#7C6FCD" size="large" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface">
       <KeyboardAwareScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 24, gap: 16 }}

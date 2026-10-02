@@ -199,7 +199,7 @@ export default function ProgressScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface items-center justify-center">
+      <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface items-center justify-center">
         <ActivityIndicator color="#7C6FCD" size="large" />
       </SafeAreaView>
     );
@@ -211,7 +211,7 @@ export default function ProgressScreen() {
   const hasData = logs.length > 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface">
       <ScrollView
         className="flex-1"
         contentContainerStyle={{ padding: 24, gap: 20 }}

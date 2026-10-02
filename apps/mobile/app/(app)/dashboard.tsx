@@ -199,7 +199,7 @@ export default function DashboardScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-surface items-center justify-center">
+      <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface items-center justify-center">
         <ActivityIndicator color="#7C6FCD" size="large" />
       </SafeAreaView>
     );
@@ -207,7 +207,7 @@ export default function DashboardScreen() {
 
   if (noOnboarding) {
     return (
-      <SafeAreaView className="flex-1 bg-surface items-center justify-center px-6">
+      <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface items-center justify-center px-6">
         <View className="bg-accent-light p-5 rounded-3xl mb-5">
           <Sparkles size={36} color="#7C6FCD" />
         </View>
@@ -246,7 +246,7 @@ export default function DashboardScreen() {
     log.mood !== null || log.energy !== null || log.symptoms.length > 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-surface">
+    <SafeAreaView edges={["top", "left", "right"]} className="flex-1 bg-surface">
       <ScrollView
         ref={scrollRef}
         className="flex-1"
