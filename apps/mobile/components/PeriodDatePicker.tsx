@@ -93,7 +93,7 @@ export function PeriodDatePicker({ visible, onClose, onConfirm }: Props) {
         <Animated.View
           entering={FadeIn.duration(200)}
           exiting={FadeOut.duration(160)}
-          style={[StyleSheet.absoluteFillObject, { backgroundColor: "rgba(17,24,39,0.45)" }]}
+          style={[StyleSheet.absoluteFill, { backgroundColor: "rgba(17,24,39,0.45)" }]}
         >
           <Pressable style={{ flex: 1 }} onPress={onClose} />
         </Animated.View>
